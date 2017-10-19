@@ -1,0 +1,6 @@
+r"%s's %s beat %s's %s's ass by %s stocks??!?"
+r"Bruh. Bruh. %s's %s. %s's %s. %s stock on %s? Bruh."
+r"%s's %s won by %s stocks over %s's %s on %s?? Bro, do you even Smash?"
+r"YOO! Did %s's %s just walk up slowly and %s-stock %s's %s on %s??!?"
+r"%s's %s %s-stocked %s's %s on %s? JV5?? Was it a JV5??"
+r"%s's %s vs. %s's %s : %s-stock on %s?? It's like if Mike Tyson was fighting an infant."

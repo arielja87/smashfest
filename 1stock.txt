@@ -1,0 +1,2 @@
+r"%s's %s took it by %s stock over %s's %s on %s? What a tight att batt!"
+r"Did %s's %s eek out a %s stock victory over %s's %s on %s?"
