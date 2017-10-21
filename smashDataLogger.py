@@ -380,6 +380,14 @@ class MainWindow(Tk):
     self.c1c2WinRatio = self.attemptDiv(sum(c1Wc2L)*100.,c1c2Count)
     self.c1c2StockMargin = self.attemptDiv(sum(c1Wc2L*stockCount)*1. - sum(c2Wc1L*stockCount)*1.,c1c2Count)
 
+    '''
+    Stats stuff to add:
+
+    # add player# + character# v. all stats for each p+c
+    # a slider (or just buttons) to match to only today/this week/this month/this quarter/this year/all time
+
+    '''
+
     #stage specific 
     # basically just cross stage into the data for extra measure
     self.p1WinStageAll = self.attemptDiv(sum(p1W&stageTrue)*100.,p1StCount)
