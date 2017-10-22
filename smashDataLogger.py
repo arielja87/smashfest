@@ -905,12 +905,18 @@ class Stats2P:
     # c1 v all
     c1W = self.data.apply(self.DFfunc,axis=1,args=(self.wc,self.c1)) 
     c1L = self.data.apply(self.DFfunc,axis=1,args=(self.lc,self.c1)) 
-    (self.c1WinRatioAll,self.c1AllCount,self.c1StockMarginAll) = self.calcRatiosAndMargins(c1W,c1L)
+    c1Notc2 = c1W&c1L     # need to not count character dittos: if captain falcon wins and captain falcon loses, what does that say?
+    c1Notc2 = ~c1Notc2
+    c1WnoDitto = c1W&c1Notc2
+    c1LnoDitto = c1L&c1Notc2
+    (self.c1WinRatioAll,self.c1AllCount,self.c1StockMarginAll) = self.calcRatiosAndMargins(c1WnoDitto,c1LnoDitto)
     
     # c2 v all
     c2W = self.data.apply(self.DFfunc,axis=1,args=(self.wc,self.c2)) 
-    c2L = self.data.apply(self.DFfunc,axis=1,args=(self.lc,self.c2)) 
-    (self.c2WinRatioAll,self.c2AllCount,self.c2StockMarginAll) = self.calcRatiosAndMargins(c2W,c2L)
+    c2L = self.data.apply(self.DFfunc,axis=1,args=(self.lc,self.c2))
+    c2WnoDitto = c2W&c1Notc2
+    c2LnoDitto = c2L&c1Notc2 
+    (self.c2WinRatioAll,self.c2AllCount,self.c2StockMarginAll) = self.calcRatiosAndMargins(c2WnoDitto,c2LnoDitto)
 
     # p1+c1 v all
     p1c1W = p1W&c1W
@@ -963,16 +969,16 @@ class Stats2P:
     (self.p1c1p2c2WinRatio,self.p1c1p2c2Count,self.p1c1p2c2StockMargin) = self.calcRatiosAndMargins(p1c1Wp2c2L,p2c2Wp1c1L)
     
     # c1 v c2 (all players)
-    c1Wc2L = c1W&c2L
-    c2Wc1L = c2W&c1L
+    c1Wc2L = c1W&c2L&c1Notc2
+    c2Wc1L = c2W&c1L&c1Notc2
     (self.c1c2WinRatio,self.c1c2Count,self.c1c2StockMargin) = self.calcRatiosAndMargins(c1Wc2L,c2Wc1L)
 
     # all the above but for stage matching
     if self.stage:
       (self.p1WinStageAll,self.p1AllStCount,self.p1StageMarginAll) = self.calcRatiosAndMargins(p1W,p1L,stage=True)
       (self.p2WinStageAll,self.p2AllStCount,self.p2StageMarginAll) = self.calcRatiosAndMargins(p2W,p2L,stage=True)
-      (self.c1WinStageAll,self.c1AllStCount,self.c1StageMarginAll) = self.calcRatiosAndMargins(c1W,c1L,stage=True)
-      (self.c2WinStageAll,self.c2AllStCount,self.c2StageMarginAll) = self.calcRatiosAndMargins(c2W,c2L,stage=True)
+      (self.c1WinStageAll,self.c1AllStCount,self.c1StageMarginAll) = self.calcRatiosAndMargins(c1W&c1Notc2,c1L&c1Notc2,stage=True)
+      (self.c2WinStageAll,self.c2AllStCount,self.c2StageMarginAll) = self.calcRatiosAndMargins(c2W&c1Notc2,c2L&c1Notc2,stage=True)
       (self.p1c1WinStageAll,self.p1c1AllStCount,self.p1c1StageMarginAll) = self.calcRatiosAndMargins(p1c1W,p1c1L,stage=True)
       (self.p2c2WinStageAll,self.p2c2AllStCount,self.p2c2StageMarginAll) = self.calcRatiosAndMargins(p2c2W,p2c2L,stage=True)
       (self.p1p2WinStage,self.p1p2StCount,self.p1p2StageMargin) = self.calcRatiosAndMargins(p1Wp2L,p2Wp1L,stage=True)
