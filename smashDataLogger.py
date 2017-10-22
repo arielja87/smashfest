@@ -9,6 +9,7 @@ import pandas as pd
 from PIL import Image, ImageTk
 from datetime import datetime
 
+
 class MainWindow(Tk):
   def __init__(self, *args, **kwargs):
     di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in dir(Tk)}
@@ -22,7 +23,8 @@ class MainWindow(Tk):
     self.colors = {'p1red':'#f55943','p2blue':'#7092be','pListGreen':'#77c18b'}
     self.playerToggle = 1
     self.dataFileName = 'smashStats.csv'
-    #self.dataFileName = 'junkStats.csv'
+    self.dataFileName = os.path.abspath(os.path.join('.','smashStats.csv'))
+    #self.dataFileName = os.path.abspath(os.path.join('.','junkStats.csv'))
     self.dataLoaded = 0     # haven't loaded yet
 
     self.title("FREE FOR ALL")
@@ -84,10 +86,16 @@ class MainWindow(Tk):
     self.P2.pickPlayer(p2)
     self.Ps.player1.set(p1)
     self.Ps.player2.set(p2)
+    self.P1.pickPlayer('Sean')
+    self.P2.pickPlayer('Josh')
+    self.Ps.player1.set('Sean')
+    self.Ps.player2.set('Josh')
     self.Ps.labels[p1].config(highlightbackground=self.colors['p1red'])
     self.Ps.labels[p2].config(highlightbackground=self.colors['p2blue'])
     self.mainCanv.P1.set(p1)
     self.mainCanv.P2.set(p2)
+    self.mainCanv.P1.set('Sean')
+    self.mainCanv.P2.set('Josh')
     self.mainCanv.switchMode('stageButton')
     self.mainCanv.switchMode('charButton')
 
@@ -261,7 +269,8 @@ class MainWindow(Tk):
         self.logIt(pWin,cWin,pLose,cLose,n,stage)
         text = "%s's %s %s %s's %s on %s" % (pWin,cWin,'>'*n,pLose,cLose,stage)
         tkMessageBox.showinfo('Logged',text) 
-        self.reset()
+        self.mainCanv.kickHeads(mode='hard')
+        self.mainCanv.kickStage(mode='hard')
       else:
         self.mainCanv.kickHeads()
 
@@ -275,177 +284,6 @@ class MainWindow(Tk):
 
     f.close()
 
-  def attemptDiv(self,num,den):
-    try:
-      calc = num/den
-      return calc
-    except ZeroDivisionError:
-      return 'No data'
-
-  def DFfunc(self,row,attr,val):
-    return row[attr] == val
-
-  def getMatchupData(self,p1,c1,p2,c2,stage,refresh=True):
-    # load the battle data file and search over a set of conditions
-    # match win ratio player-to-player
-    # match win ratio character-to-character
-    # % of matches p1/p2 wins with that char, across all data
-    # % of matches p1/p2 wins on that stage, across all data
-    # total stock margin vs win percentage: i.e. do they win many close and lose few by a lot?
-    wp = 'WinningPlayer'
-    wc = 'WinningCharacter'
-    lp = 'LosingPlayer'
-    lc = 'LosingCharacter'
-    sc = 'StockCount'
-    st = 'Stage'
-    if refresh or not(self.dataLoaded):
-      self.data = pd.read_csv(self.dataFileName)
-      self.dataLoaded = 1
-
-    # data frames for individual config matching
-    # e.g. p1W will give a bool-valued dataFrame with True where each row has the
-    # winning player (wp) == player 1 (p1)
-
-    p1W = self.data.apply(self.DFfunc,axis=1,args=(wp,p1)) 
-    p2W = self.data.apply(self.DFfunc,axis=1,args=(wp,p2)) 
-    p1L = self.data.apply(self.DFfunc,axis=1,args=(lp,p1)) 
-    p2L = self.data.apply(self.DFfunc,axis=1,args=(lp,p2)) 
-    c1W = self.data.apply(self.DFfunc,axis=1,args=(wc,c1)) 
-    c2W = self.data.apply(self.DFfunc,axis=1,args=(wc,c2)) 
-    c1L = self.data.apply(self.DFfunc,axis=1,args=(lc,c1)) 
-    c2L = self.data.apply(self.DFfunc,axis=1,args=(lc,c2)) 
-    stageTrue = self.data.apply(self.DFfunc,axis=1,args=(st,stage)) 
-    stockCount= self.data[sc]
-
-    # intersections
-    p1c1W = p1W&c1W
-    p1c1L = p1L&c1L
-    p2c2W = p2W&c2W
-    p2c2L = p2L&c2L
-    p1Wp2L = p1W&p2L
-    p2Wp1L = p2W&p1L
-    p1c1Wp2c2L = p1W&c1W&p2L&c2L
-    p2c2Wp1c1L = p2W&c2W&p1L&c1L
-
-    c1Wc2L = c1W&c2L
-    c2Wc1L = c2W&c1L
-
-    # match counts
-    p1Count = sum([sum(p1W),sum(p1L)])
-    p2Count = sum([sum(p2W),sum(p2L)])
-    p1c1Count = sum([sum(p1c1W),sum(p1c1L)])
-    p2c2Count = sum([sum(p2c2W),sum(p2c2L)])
-    p1p2Count = sum([sum(p1Wp2L),sum(p2Wp1L)])
-    p1c1p2c2Count = sum([sum(p1c1Wp2c2L),sum(p2c2Wp1c1L)])
-
-    c1Count = sum([sum(c1W),sum(c1L)])
-    c2Count = sum([sum(c2W),sum(c2L)])
-    c1c2Count = sum([sum(c1Wc2L),sum(c2Wc1L)])
-
-    p1StCount = sum([sum(p1W&stageTrue),sum(p1L&stageTrue)])
-    p2StCount = sum([sum(p2W&stageTrue),sum(p2L&stageTrue)])
-    p1c1StCount = sum([sum(p1c1W&stageTrue),sum(p1c1L&stageTrue)])
-    p2c2StCount = sum([sum(p2c2W&stageTrue),sum(p2c2L&stageTrue)])
-    p1p2StCount = sum([sum(p1Wp2L&stageTrue),sum(p2Wp1L&stageTrue)])
-    p1c1p2c2StCount = sum([sum(p1c1Wp2c2L&stageTrue),sum(p2c2Wp1c1L&stageTrue)])
-
-    c1StCount = sum([sum(c1W&stageTrue),sum(c1L&stageTrue)])
-    c2StCount = sum([sum(c2W&stageTrue),sum(c2L&stageTrue)])
-    c1c2StCount = sum([sum(c1Wc2L&stageTrue),sum(c2Wc1L&stageTrue)])
-
-    #win ratios
-    #player specific
-    self.p1WinRatioAll = self.attemptDiv(sum(p1W)*100.,p1Count)
-    self.p2WinRatioAll = self.attemptDiv(sum(p2W)*100.,p2Count)
-    self.p1StockMarginAll = self.attemptDiv(sum(p1W*stockCount)*1. - sum(p1L*stockCount)*1.,p1Count)
-    self.p2StockMarginAll = self.attemptDiv(sum(p2W*stockCount)*1. - sum(p2L*stockCount)*1.,p2Count)
-
-    self.p1c1WinRatio = self.attemptDiv(sum(p1c1W)*100.,p1c1Count)
-    self.p2c2WinRatio = self.attemptDiv(sum(p2c2W)*100.,p2c2Count)
-    self.p1c1StockMargin = self.attemptDiv(sum(p1c1W*stockCount)*1. - sum(p1c1L*stockCount)*1.,p1c1Count)
-    self.p2c2StockMargin = self.attemptDiv(sum(p2c2W*stockCount)*1. - sum(p2c2L*stockCount)*1.,p2c2Count)
-
-    self.p1p2WinRatio = self.attemptDiv(sum(p1Wp2L)*100.,p1p2Count)
-    self.p1c1p2c2WinRatio = self.attemptDiv(sum(p1c1Wp2c2L)*100.,p1c1p2c2Count)
-    self.p1p2StockMargin = self.attemptDiv(sum(p1Wp2L*stockCount)*1. - sum(p2Wp1L*stockCount)*1.,p1p2Count)
-    self.p1c1p2c2StockMargin = self.attemptDiv(sum(p1c1Wp2c2L*stockCount)*1. - sum(p2c2Wp1c1L*stockCount)*1.,p1c1p2c2Count)
-    # if the data exists for each of the above, the opposite ratio is just 100 - this one
-
-    #character specific
-    self.c1WinRatioAll = self.attemptDiv(sum(c1W)*100.,c1Count)
-    self.c2WinRatioAll = self.attemptDiv(sum(c2W)*100.,c2Count)
-    self.c1StockMarginAll = self.attemptDiv(sum(c1W*stockCount)*1. - sum(c1L*stockCount)*1.,c1Count)
-    self.c2StockMarginAll = self.attemptDiv(sum(c2W*stockCount)*1. - sum(c2L*stockCount)*1.,c2Count)
-
-    self.c1c2WinRatio = self.attemptDiv(sum(c1Wc2L)*100.,c1c2Count)
-    self.c1c2StockMargin = self.attemptDiv(sum(c1Wc2L*stockCount)*1. - sum(c2Wc1L*stockCount)*1.,c1c2Count)
-
-    '''
-    Stats stuff to add:
-
-    # add player# + character# v. all stats for each p+c
-    # a slider (or just buttons) to match to only today/this week/this month/this quarter/this year/all time
-
-    '''
-
-    #stage specific 
-    # basically just cross stage into the data for extra measure
-    self.p1WinStageAll = self.attemptDiv(sum(p1W&stageTrue)*100.,p1StCount)
-    self.p2WinStageAll = self.attemptDiv(sum(p2W&stageTrue)*100.,p2StCount)
-    self.p1StageMarginAll = self.attemptDiv(sum((p1W&stageTrue)*stockCount)*1. - sum((p1L&stageTrue)*stockCount)*1.,p1StCount)
-    self.p2StageMarginAll = self.attemptDiv(sum((p2W&stageTrue)*stockCount)*1. - sum((p2L&stageTrue)*stockCount)*1.,p2StCount)
-
-    self.p1c1WinStage = self.attemptDiv(sum(p1c1W&stageTrue)*100.,p1c1StCount)
-    self.p2c2WinStage = self.attemptDiv(sum(p2c2W&stageTrue)*100.,p2c2StCount)
-    self.p1c1StageMargin = self.attemptDiv(sum((p1c1W&stageTrue)*stockCount)*1. - sum((p1c1L&stageTrue)*stockCount)*1.,p1c1StCount)
-    self.p2c2StageMargin = self.attemptDiv(sum((p2c2W&stageTrue)*stockCount)*1. - sum((p2c2L&stageTrue)*stockCount)*1.,p2c2StCount)
-
-    self.p1p2WinStage = self.attemptDiv(sum(p1Wp2L&stageTrue)*100.,p1p2StCount)
-    self.p1c1p2c2WinStage = self.attemptDiv(sum(p1c1Wp2c2L&stageTrue)*100.,p1c1p2c2StCount)
-    self.p1p2StageMargin = self.attemptDiv(sum((p1Wp2L&stageTrue)*stockCount)*1. - sum((p2Wp1L&stageTrue)*stockCount)*1.,p1p2StCount)
-    self.p1c1p2c2StageMargin = self.attemptDiv(sum((p1c1Wp2c2L&stageTrue)*stockCount)*1. - sum((p2c2Wp1c1L&stageTrue)*stockCount)*1.,p1c1p2c2StCount)
-    # if the data exists for each of the above, the opposite Stage is just 100 - this one
-
-    #character specific
-    self.c1WinStageAll = self.attemptDiv(sum(c1W&stageTrue)*100.,c1StCount)
-    self.c2WinStageAll = self.attemptDiv(sum(c2W&stageTrue)*100.,c2StCount)
-    self.c1StageMarginAll = self.attemptDiv(sum((c1W&stageTrue)*stockCount)*1. - sum((c1L&stageTrue)*stockCount)*1.,c1StCount)
-    self.c2StageMarginAll = self.attemptDiv(sum((c2W&stageTrue)*stockCount)*1. - sum((c2L&stageTrue)*stockCount)*1.,c2StCount)
-
-    self.c1c2WinStage = self.attemptDiv(sum(c1Wc2L&stageTrue)*100.,c1c2StCount)
-    self.c1c2StageMargin = self.attemptDiv(sum((c1Wc2L&stageTrue)*stockCount)*1. - sum((c2Wc1L&stageTrue)*stockCount)*1.,c1c2StCount)
-
-    self.dataWin = DataWindow(self,p1=p1,p2=p2,c1=c1,c2=c2,stage=stage)
-    self.dataWin.place(relx=0.5, rely=0.5, anchor=CENTER)
-    self.dataWin.focus_force()
-
-
-    '''
-    print('p1 win ratio %2f, %.2f margin' % (p1WinRatioAll,p1StockMarginAll))
-    print('p2 win ratio %2f, %.2f margin' % (p2WinRatioAll,p2StockMarginAll))
-    print('p1 v p2 ratio %2f, %.2f margin' % (p1p2WinRatio,p1p2StockMargin))
-    print('p1c1 win ratio %2f, %.2f margin' % (p1c1WinRatio,p1c1StockMargin))
-    print('p2c2 win ratio %2f, %.2f margin' % (p2c2WinRatio,p2c2StockMargin))
-    print('p1c1 v p2c2 ratio %2f, %.2f margin' % (p1c1p2c2WinRatio,p1c1p2c2StockMargin))
-
-    print('c1 wins %2f, %.2f margin' % (c1WinRatioAll,c1StockMarginAll))
-    print('c2 wins %2f, %.2f margin' % (c2WinRatioAll,c2StockMarginAll))
-    print('c1 v c2 ratio %2f, %.2f margin' % (c1c2WinRatio,c1c2StockMargin))
-
-    print '\n\n'
-
-    print('p1 win ratio %2f, %.2f margin, stage true' % (p1WinStageAll,p1StageMarginAll))
-    print('p2 win ratio %2f, %.2f margin, stage true' % (p2WinStageAll,p2StageMarginAll))
-    print('p1 v p2 ratio %2f, %.2f margin, stage true' % (p1p2WinStage,p1p2StageMargin))
-    print('p1c1 win ratio %2f, %.2f margin, stage true' % (p1c1WinStage,p1c1StageMargin))
-    print('p2c2 win ratio %2f, %.2f margin, stage true' % (p2c2WinStage,p2c2StageMargin))
-    print('p1c1 v p2c2 ratio %2f, %.2f margin, stage true' % (p1c1p2c2WinStage,p1c1p2c2StageMargin))
-
-    print('c1 wins %2f, %.2f margin, stage true' % (c1WinStageAll,c1StageMarginAll))
-    print('c2 wins %2f, %.2f margin, stage true' % (c2WinStageAll,c2StageMarginAll))
-    print('c1 v c2 ratio %2f, %.2f margin, stage true' % (c1c2WinStage,c1c2StageMargin))
-    '''
-
   def centerWindow(self,w=300, h=200):
     # get screen width and height
     ws = self.winfo_screenwidth()
@@ -454,6 +292,7 @@ class MainWindow(Tk):
     x = (ws/2) - (w/2)
     y = (hs/2) - (h/2)
     self.geometry('%dx%d+%d+%d' % (w, h, x, y))
+
 
 class PlayerHeadWindow(Frame):
   def __init__(self, master, *args, **kwargs):
@@ -600,6 +439,7 @@ class PlayerListWindow(Frame):
     #self.PnamesBoxFrame.pack(side=TOP)
     #self.PnamesCanv.place()
 
+
 class SelectionWindow(Frame):
   def __init__(self, master, *args, **kwargs):
     di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in master.keys()}
@@ -625,6 +465,8 @@ class SelectionWindow(Frame):
     self.stagLock = StringVar(self)
     self.toggLock = StringVar(self) #unnecessary?
     self.stocLock = StringVar(self)
+    self.statsLock = StringVar(self)
+    self.zeroVars('lock')
 
     #current mode options
     self.toggleMode = StringVar(self)
@@ -632,9 +474,11 @@ class SelectionWindow(Frame):
     self.stockCount = StringVar(self)
     self.stockCount.set('')
     self.readyForStock = False
+    self.readyForStats = True
     self.lockInWin = BooleanVar(self)
     self.lockInWin.set(False)
 
+    self.master = master
     self.characters = master.characters
     self.stages = master.stages
     self.P1 = StringVar(self)
@@ -773,6 +617,7 @@ class SelectionWindow(Frame):
       self.stagLock.set('')
       self.toggLock.set('')
       self.stocLock.set('')
+      self.statsLock.set('')
 
   def updateVars(self,sel,mode,togg='trace'):
 
@@ -841,15 +686,19 @@ class SelectionWindow(Frame):
 
       # check our mode, set and switchMode if different
       if sel in self.toggleButtons and sel != self.toggLock.get():
-        self.toggLock.set(sel)
-        self.switchMode(sel)
+        if sel == 'statsButton':
+          if self.readyForStock and self.readyForStats:
+            self.readyForStats = False
+            self.getMatchupData(self.allVars)
+        else:
+          self.toggLock.set(sel)
+          self.switchMode(sel)
 
       #after any updates, recheck if stockCount can be updated
       self.checkReady()
 
     else:
       print('Something went wrong with the updateVars() function!')
-
 
   def mouseTrace(self,event):
     # track the mouse position, and check it across the dictionaries
@@ -885,10 +734,24 @@ class SelectionWindow(Frame):
 
   def checkReady(self):
     # to allow a stock selection, we need players, characters and stage chosen
-    if all([el.get() for el in [self.P1,self.P2,self.char1,self.char2,self.stage]]):
+    self.allVars = [el.get() for el in [self.P1,self.char1,self.P2,self.char2,self.stage]]
+    if all(self.allVars):
       self.readyForStock = True
     else:
       self.readyForStock = False
+
+  def getMatchupData(self,vars):
+    p1 = vars[0]
+    c1 = vars[1]
+    p2 = vars[2]
+    c2 = vars[3]
+    stage = vars[4]
+
+    self.dataWin = DataWindow(file=self.master.dataFileName,p1=p1,c1=c1,p2=p2,c2=c2,stage=stage)
+    self.dataWin.focus_force()
+    self.dataWin.lift()
+    self.dataWin.mainloop()
+    self.readyForStats = True
 
   def dictMake(self):
     # set up dictionaries with pixels as keys and either a character or stage name, or a stock count or toggle button string
@@ -961,6 +824,11 @@ class SelectionWindow(Frame):
       scaleCoord = (int(singCoord[0]*self.scaleX),int(singCoord[1]*self.scaleY))
       self.toggleDict[scaleCoord] = 'stageButton'
 
+    areaList = [(x,y) for x in range(10,85) for y in range(505,545)]
+    for singCoord in areaList:
+      scaleCoord = (int(singCoord[0]*self.scaleX),int(singCoord[1]*self.scaleY))
+      self.toggleDict[scaleCoord] = 'statsButton'
+
     #get the areas for the stock count buttons
     for el in self.stockPixelDict:
       pix = self.stockPixelDict[el]
@@ -975,102 +843,449 @@ class SelectionWindow(Frame):
         self.stockDict[scaleCoord] = el
 
 
-class DataWindow(Frame):
-  def __init__(self, master, *args, **kwargs):
-    di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in master.keys()}
-    Frame.__init__(self, master, di)
+class Stats2P:
+  def __init__(self, file, p1,c1,p2,c2,stage):
+    self.dataFileName = file
+    self.p1 = p1
+    self.c1 = c1
+    self.p2 = p2
+    self.c2 = c2
+    self.stage = stage
 
+    # load the battle data file and search over a set of conditions
+    # match win ratio player-to-player
+    # match win ratio character-to-character
+    # % of matches p1/p2 wins with that char, across all data
+    # % of matches p1/p2 wins on that stage, across all data
+    # total stock margin vs win percentage: i.e. do they win many close and lose few by a lot?
+
+    self.wp = 'WinningPlayer'
+    self.wc = 'WinningCharacter'
+    self.lp = 'LosingPlayer'
+    self.lc = 'LosingCharacter'
+    self.sc = 'StockCount'
+    self.st = 'Stage'
+
+    self.data = pd.read_csv(self.dataFileName)
+    
+    self.stageTrue = self.data.apply(self.DFfunc,axis=1,args=(self.st,self.stage)) 
+    self.stockCount= self.data[self.sc]
+
+    # data frames for individual config matching
+    # e.g. p1W will give a bool-valued dataFrame with True where each row has the
+    # winning player (wp) == player 1 (p1)
+
+    '''
+    # "intersection" means for intersection of p1 vs p2 or p1+c1 vs p2 or p1+c1 vs p2+c2, etc. 
+    # match intersections; for each intersection the format is:
+    bool win/loss arrays          : true for lines that match, false otherwise
+    counters                      : how many matches were played 
+    stage specific counters       : how many matches were played (and on this stage)
+    win ratio                     : win to loss ratio as a %
+    *stock margin                  : average number of stocks left per match for wins/losses/total 
+    stage-specific win ratio      : % win-loss ratio on this stage
+    stage-specific stock margin   : same as above, on this stage
+
+    *stock margin note e.g.: 
+    3x 1-stock wins => (avg. +1.0) 
+    6x 3-stock losses =>(avg. -3.0)
+    9x total, [(3*+1) + (6*-3)] / 9 => (avg. -1.67)  
+    => margins = +1.0/-3.0/-1.67
+    '''
+
+    # p1 v all
+    p1W = self.data.apply(self.DFfunc,axis=1,args=(self.wp,self.p1)) 
+    p1L = self.data.apply(self.DFfunc,axis=1,args=(self.lp,self.p1)) 
+    (self.p1WinRatioAll,self.p1AllCount,self.p1StockMarginAll) = self.calcRatiosAndMargins(p1W,p1L)
+    (self.p1WinStageAll,self.p1AllStCount,self.p1StageMarginAll) = self.calcRatiosAndMargins(p1W,p1L,stage=True)
+
+    # p2 v all
+    p2W = self.data.apply(self.DFfunc,axis=1,args=(self.wp,self.p2)) 
+    p2L = self.data.apply(self.DFfunc,axis=1,args=(self.lp,self.p2)) 
+    (self.p2WinRatioAll,self.p2AllCount,self.p2StockMarginAll) = self.calcRatiosAndMargins(p2W,p2L)
+    (self.p2WinStageAll,self.p2AllStCount,self.p2StageMarginAll) = self.calcRatiosAndMargins(p2W,p2L,stage=True)
+    
+    # c1 v all
+    c1W = self.data.apply(self.DFfunc,axis=1,args=(self.wc,self.c1)) 
+    c1L = self.data.apply(self.DFfunc,axis=1,args=(self.lc,self.c1)) 
+    (self.c1WinRatioAll,self.c1AllCount,self.c1StockMarginAll) = self.calcRatiosAndMargins(c1W,c1L)
+    (self.c1WinStageAll,self.c1AllStCount,self.c1StageMarginAll) = self.calcRatiosAndMargins(c1W,c1L,stage=True)
+    
+    # c2 v all
+    c2W = self.data.apply(self.DFfunc,axis=1,args=(self.wc,self.c2)) 
+    c2L = self.data.apply(self.DFfunc,axis=1,args=(self.lc,self.c2)) 
+    (self.c2WinRatioAll,self.c2AllCount,self.c2StockMarginAll) = self.calcRatiosAndMargins(c2W,c2L)
+    (self.c2WinStageAll,self.c2AllStCount,self.c2StageMarginAll) = self.calcRatiosAndMargins(c2W,c2L,stage=True)
+
+    # p1+c1 v all
+    p1c1W = p1W&c1W
+    p1c1L = p1L&c1L
+    (self.p1c1WinRatioAll,self.p1c1AllCount,self.p1c1StockMarginAll) = self.calcRatiosAndMargins(p1c1W,p1c1L)
+    (self.p1c1WinStageAll,self.p1c1AllStCount,self.p1c1StageMarginAll) = self.calcRatiosAndMargins(p1c1W,p1c1L,stage=True)
+
+    # p2+c2 v all
+    p2c2W = p2W&c2W
+    p2c2L = p2L&c2L
+    (self.p2c2WinRatioAll,self.p2c2AllCount,self.p2c2StockMarginAll) = self.calcRatiosAndMargins(p2c2W,p2c2L)
+    (self.p2c2WinStageAll,self.p2c2AllStCount,self.p2c2StageMarginAll) = self.calcRatiosAndMargins(p2c2W,p2c2L,stage=True)
+
+    # p1 v p2 (all characters)
+    p1Wp2L = p1W&p2L
+    p2Wp1L = p2W&p1L
+    (self.p1p2WinRatio,self.p1p2Count,self.p1p2StockMargin) = self.calcRatiosAndMargins(p1Wp2L,p2Wp1L)
+    (self.p1p2WinStage,self.p1p2StCount,self.p1p2StageMargin) = self.calcRatiosAndMargins(p1Wp2L,p2Wp1L,stage=True)
+    
+    # p1 (all characters) v c2 (all players)
+    p1Wc2L = p1W&c2L
+    c2Wp1L = c2W&p1L
+    (self.p1c2WinRatio,self.p1c2Count,self.p1c2StockMargin) = self.calcRatiosAndMargins(p1Wc2L,c2Wp1L)
+    (self.p1c2WinStage,self.p1c2StCount,self.p1c2StageMargin) = self.calcRatiosAndMargins(p1Wc2L,c2Wp1L,stage=True)
+    
+    # p2 (all characters) v c1 (all players)
+    p2Wc1L = p2W&c1L
+    c1Wp2L = c1W&p2L
+    (self.p2c1WinRatio,self.p2c1Count,self.p2c1StockMargin) = self.calcRatiosAndMargins(p2Wc1L,c1Wp2L)
+    (self.p2c1WinStage,self.p2c1StCount,self.p2c1StageMargin) = self.calcRatiosAndMargins(p2Wc1L,c1Wp2L,stage=True)
+    
+    # p1+c1 v p2 (all characters)
+    p1c1Wp2L = p1c1W&p2L
+    p2Wp1c1L = p2W&p1c1L
+    (self.p1c1p2WinRatio,self.p1c1p2Count,self.p1c1p2StockMargin) = self.calcRatiosAndMargins(p1c1Wp2L,p2Wp1c1L)
+    (self.p1c1p2WinStage,self.p1c1p2StCount,self.p1c1p2StageMargin) = self.calcRatiosAndMargins(p1c1Wp2L,p2Wp1c1L,stage=True)
+    
+    # p1+c1 v c2 (all players)
+    p1c1Wc2L = p1c1W&c2L
+    c2Wp1c1L = c2W&p1c1L
+    (self.p1c1c2WinRatio,self.p1c1c2Count,self.p1c1c2StockMargin) = self.calcRatiosAndMargins(p1c1Wc2L,c2Wp1c1L)
+    (self.p1c1c2WinStage,self.p1c1c2StCount,self.p1c1c2StageMargin) = self.calcRatiosAndMargins(p1c1Wc2L,c2Wp1c1L,stage=True)
+
+    # p2+c2 v p1 (all characters)  
+    p2c2Wp1L = p2c2W&p1L
+    p1Wp2c2L = p1W&p2c2L
+    (self.p2c2p1WinRatio,self.p2c2p1Count,self.p2c2p1StockMargin) = self.calcRatiosAndMargins(p2c2Wp1L,p1Wp2c2L)
+    (self.p2c2p1WinStage,self.p2c2p1StCount,self.p2c2p1StageMargin) = self.calcRatiosAndMargins(p2c2Wp1L,p1Wp2c2L,stage=True)
+    
+    # p2+c2 v c1 (all players)
+    p2c2Wc1L = p2c2W&c1L
+    c1Wp2c2L = c1W&p2c2L
+    (self.p2c2c1WinRatio,self.p2c2c1Count,self.p2c2c1StockMargin) = self.calcRatiosAndMargins(p2c2Wc1L,c1Wp2c2L)
+    (self.p2c2c1WinStage,self.p2c2c1StCount,self.p2c2c1StageMargin) = self.calcRatiosAndMargins(p2c2Wc1L,c1Wp2c2L,stage=True)
+    
+    # p1+c1 v p2+c2
+    p1c1Wp2c2L = p1c1W&p2c2L
+    p2c2Wp1c1L = p2c2W&p1c1L
+    (self.p1c1p2c2WinRatio,self.p1c1p2c2Count,self.p1c1p2c2StockMargin) = self.calcRatiosAndMargins(p1c1Wp2c2L,p2c2Wp1c1L)
+    (self.p1c1p2c2WinStage,self.p1c1p2c2StCount,self.p1c1p2c2StageMargin) = self.calcRatiosAndMargins(p1c1Wp2c2L,p2c2Wp1c1L,stage=True)
+    
+    # c1 v c2 (all players)
+    c1Wc2L = c1W&c2L
+    c2Wc1L = c2W&c1L
+    (self.c1c2WinRatio,self.c1c2Count,self.c1c2StockMargin) = self.calcRatiosAndMargins(c1Wc2L,c2Wc1L)
+    (self.c1c2WinStage,self.c1c2StCount,self.c1c2StageMargin) = self.calcRatiosAndMargins(c1Wc2L,c2Wc1L,stage=True)
+
+    '''
+    Stats stuff to add:
+
+    # a slider (or just buttons) to match to only today/this week/this month/this quarter/this year/all time
+
+    '''
+
+  def statString(self,ratio,margins,reverse=False):
+    altRat, altMars = self.getAltStat(ratio,margins)
+    rats = [ratio,altRat]
+    mars = [margins[0],margins[1],margins[2],altMars[0],altMars[1],altMars[2]]
+
+    stRats = []
+    stMars = []
+    for el in rats:
+      if el == 'N/A':
+        stRats.append(el)
+      else:
+        stRats.append('%3.f%%' % el)
+
+    for el in mars:
+      if el == 'N/A':
+        stMars.append('%4s' % el)
+      else:
+        stMars.append('%+.1f' % el)
+    if reverse:
+      return '%3s:%3s  %4s/%4s/%4s' % (stRats[1],stRats[0],stMars[3],stMars[4],stMars[5])
+    else:
+      return '%3s:%3s  %4s/%4s/%4s' % (stRats[0],stRats[1],stMars[0],stMars[1],stMars[2])
+
+  def getAltStat(self,ratio,margins):
+    if ratio == 'N/A':
+      altRatio = 'N/A'
+    else:
+      altRatio = 100-ratio
+
+    altMargins = []
+    for marg in margins:
+      if marg == 'N/A':
+        altMargins.append('N/A')
+      else:
+        altMargins.append(-1*marg)
+
+    altMargins = tuple([altMargins[1],altMargins[0],altMargins[2]])
+
+    return altRatio,altMargins
+
+  def attemptDiv(self,num,den):
+    if den == 0:
+      return 'N/A'
+    else:
+      try:
+        calc = num/den
+        return calc
+      except ZeroDivisionError:
+        return 'N/A'
+
+  def DFfunc(self,row,attr,val):
+    return row[attr] == val
+
+  def calcRatiosAndMargins(self,wins,losses,stage=False):
+    if stage == True:
+      wins = wins&self.stageTrue
+      losses = losses&self.stageTrue
+
+    winCount = sum(wins)
+    lossCount= sum(losses)
+    totCount = winCount+lossCount
+    winRatio = self.attemptDiv(winCount*100.,totCount)
+    winMargin = self.attemptDiv(sum(wins*self.stockCount)*1.,winCount)
+    lossMargin = self.attemptDiv(sum(losses*self.stockCount)*-1.,lossCount)
+    allMargin = self.attemptDiv(sum(wins*self.stockCount)*1. - sum(losses*self.stockCount)*1.,totCount)
+
+    return (winRatio,totCount,(winMargin,lossMargin,allMargin))
+
+class DataWindow(Tk):
+  def __init__(self, *args, **kwargs):
+    di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in dir(Tk)}
+    Tk.__init__(self, *args, **di)
+
+    self.file = kwargs['file']
     self.p1 = kwargs['p1']
-    self.p2 = kwargs['p2']
     self.c1 = kwargs['c1']
+    self.p2 = kwargs['p2']
     self.c2 = kwargs['c2']
     self.stage = kwargs['stage']
 
     self.bind_all('<Escape>',self.closeIt)
-    self.config(height=70,width=500)
+    self.config(height=200,width=500)
+    self.colors = {'p1red':'#f55943','p2blue':'#7092be','p12blend':'#ac7886'}
 
-    self.fr = Frame(self)
+    self.stats = Stats2P(file=self.file,p1=self.p1,c1=self.c1,p2=self.p2,c2=self.c2,stage=self.stage)
+
+    self.headFont = tkFont.Font(family="Times", size=12, weight=tkFont.BOLD)
+    self.bodyFont = tkFont.Font(family="Times", size=12)
+
+    self.fr = LabelFrame(self)
     self.fr.config(highlightbackground='#000',highlightthickness=4)
-    self.labels = Frame(self.fr)
-    self.stageLab = Frame(self.fr)
-    self.allData= Frame(self.fr)
-    self.pData = Frame(self.fr)
-    self.pcData = Frame(self.fr)
-    self.cData = Frame(self.fr)
+    self.topLabels = LabelFrame(self.fr,font=self.headFont)
+    self.subLabels = LabelFrame(self.fr,font=self.bodyFont)
+    self.allV = LabelFrame(self.fr,font=self.bodyFont)
+    self.p1V = LabelFrame(self.fr,font=self.bodyFont)
+    self.p1c1V = LabelFrame(self.fr,font=self.bodyFont)
+    self.c1V = LabelFrame(self.fr,font=self.bodyFont)
+    self.subLabels2 = LabelFrame(self.fr,font=self.bodyFont)
+    self.allV2 = LabelFrame(self.fr,font=self.bodyFont)
+    self.p1V2 = LabelFrame(self.fr,font=self.bodyFont)
+    self.p1c1V2 = LabelFrame(self.fr,font=self.bodyFont)
+    self.c1V2 = LabelFrame(self.fr,font=self.bodyFont)
 
-    self.labText = {}
-    self.stgText = {}
-    self.allText = {}
-    self.pText = {}
-    self.pcText = {}
-    self.cText = {}
+    self.labelText = {}
+    self.subLabelText = {}
+    self.allVText = {}
+    self.p1VText = {}
+    self.p1c1VText = {}
+    self.c1VText = {}
+    self.subLabelText2 = {}
+    self.allVText2 = {}
+    self.p1VText2 = {}
+    self.p1c1VText2 = {}
+    self.c1VText2 = {}
 
     for i in range(5):
       if i == 0:
         wid = 15
-        col = '#fff'
       else:
-        wid = 32
-        col = master.colors['p1red']
+        wid = 40
 
-      self.labText[i] = Text(self.labels,height=1,width=wid)
-      self.stgText[i] = Text(self.stageLab,height=1,width=wid)
-      self.allText[i] = Text(self.allData,height=1,width=wid)
-      self.pText[i] = Text(self.pData,height=1,width=wid)
-      self.pcText[i] = Text(self.pcData,height=1,width=wid)
-      self.cText[i] = Text(self.cData,height=1,width=wid)
+      self.labelText[i] = Label(self.topLabels,height=1,width=wid,highlightthickness=2)
+      self.subLabelText[i] = Label(self.subLabels,height=1,width=wid,highlightthickness=2)
+      self.allVText[i] = Text(self.allV,height=1,width=wid,highlightthickness=2)
+      self.p1VText[i] = Text(self.p1V,height=1,width=wid,highlightthickness=2)
+      self.p1c1VText[i] = Text(self.p1c1V,height=1,width=wid,highlightthickness=2)
+      self.c1VText[i] = Text(self.c1V,height=1,width=wid,highlightthickness=2)
+      self.subLabelText2[i] = Label(self.subLabels2,height=1,width=wid,highlightthickness=2)
+      self.allVText2[i] = Text(self.allV2,height=1,width=wid,highlightthickness=2)
+      self.p1VText2[i] = Text(self.p1V2,height=1,width=wid,highlightthickness=2)
+      self.p1c1VText2[i] = Text(self.p1c1V2,height=1,width=wid,highlightthickness=2)
+      self.c1VText2[i] = Text(self.c1V2,height=1,width=wid,highlightthickness=2)
+    
+    self.labelText[2].config(highlightbackground=self.colors['p2blue'])
+    self.labelText[3].config(highlightbackground=self.colors['p2blue'])
+    self.labelText[4].config(highlightbackground=self.colors['p2blue'])
 
-      self.labText[i].config(highlightbackground='#fff',highlightthickness=2)
-      self.stgText[i].config(highlightbackground='#fff',highlightthickness=2)
-      self.allText[i].config(highlightbackground=col,highlightthickness=2)
+    self.p1VText[0].config(highlightbackground=self.colors['p1red'])
+    self.p1c1VText[0].config(highlightbackground=self.colors['p1red'])
+    self.c1VText[0].config(highlightbackground=self.colors['p1red'])
 
-      if i in [0,1,3]:
-        self.pText[i].config(highlightbackground=col,highlightthickness=2)
-        self.pcText[i].config(highlightbackground=col,highlightthickness=2)
-      else:
-        self.pText[i].config(highlightbackground='#fff',highlightthickness=2)
-        self.pcText[i].config(highlightbackground="#fff",highlightthickness=2)
+    self.p1VText[0].config(highlightbackground=self.colors['p1red'])
+    self.p1c1VText[0].config(highlightbackground=self.colors['p1red'])
+    self.c1VText[0].config(highlightbackground=self.colors['p1red'])
+    self.allVText[2].config(highlightbackground=self.colors['p2blue'])
+    self.allVText[3].config(highlightbackground=self.colors['p2blue'])
+    self.allVText[4].config(highlightbackground=self.colors['p2blue'])
+    self.p1VText[1].config(highlightbackground=self.colors['p1red'])
+    self.p1VText[2].config(highlightbackground=self.colors['p12blend'])
+    self.p1VText[3].config(highlightbackground=self.colors['p2blue'])
+    self.p1VText[4].config(highlightbackground=self.colors['p2blue'])
+    self.p1c1VText[1].config(highlightbackground=self.colors['p1red'])
+    self.p1c1VText[2].config(highlightbackground=self.colors['p1red'])
+    self.p1c1VText[3].config(highlightbackground=self.colors['p12blend'])
+    self.p1c1VText[4].config(highlightbackground=self.colors['p2blue'])
+    self.c1VText[1].config(highlightbackground=self.colors['p1red'])
+    self.c1VText[2].config(highlightbackground=self.colors['p1red'])
+    self.c1VText[3].config(highlightbackground=self.colors['p1red'])
+    self.c1VText[4].config(highlightbackground=self.colors['p12blend'])
 
-      if i in [0,2,4]:
-        self.cText[i].config(highlightbackground=col,highlightthickness=2)
-      else:
-        self.cText[i].config(highlightbackground='#fff',highlightthickness=2)
+    self.p1VText2[0].config(highlightbackground=self.colors['p1red'])
+    self.p1c1VText2[0].config(highlightbackground=self.colors['p1red'])
+    self.c1VText2[0].config(highlightbackground=self.colors['p1red'])
 
-    self.labText[0].insert(END,'Categ. \ Fight')
-    self.labText[1].insert(END,'P1 :      %.15s' % (self.p1))
-    self.labText[2].insert(END,'C1 :      %.15s' % (self.c1))
-    self.labText[3].insert(END,'P2 :      %.15s' % (self.p2))
-    self.labText[4].insert(END,'C2 :      %.15s' % (self.c2))
+    self.p1VText2[0].config(highlightbackground=self.colors['p1red'])
+    self.p1c1VText2[0].config(highlightbackground=self.colors['p1red'])
+    self.c1VText2[0].config(highlightbackground=self.colors['p1red'])
+    self.allVText2[2].config(highlightbackground=self.colors['p2blue'])
+    self.allVText2[3].config(highlightbackground=self.colors['p2blue'])
+    self.allVText2[4].config(highlightbackground=self.colors['p2blue'])
+    self.p1VText2[1].config(highlightbackground=self.colors['p1red'])
+    self.p1VText2[2].config(highlightbackground=self.colors['p12blend'])
+    self.p1VText2[3].config(highlightbackground=self.colors['p2blue'])
+    self.p1VText2[4].config(highlightbackground=self.colors['p2blue'])
+    self.p1c1VText2[1].config(highlightbackground=self.colors['p1red'])
+    self.p1c1VText2[2].config(highlightbackground=self.colors['p1red'])
+    self.p1c1VText2[3].config(highlightbackground=self.colors['p12blend'])
+    self.p1c1VText2[4].config(highlightbackground=self.colors['p2blue'])
+    self.c1VText2[1].config(highlightbackground=self.colors['p1red'])
+    self.c1VText2[2].config(highlightbackground=self.colors['p1red'])
+    self.c1VText2[3].config(highlightbackground=self.colors['p1red'])
+    self.c1VText2[4].config(highlightbackground=self.colors['p12blend'])
 
-    self.stgText[1].insert(END,'all data       /      this stage')
-    self.stgText[2].insert(END,'all data       /      this stage')
-    self.stgText[3].insert(END,'all data       /      this stage')
-    self.stgText[4].insert(END,'all data       /      this stage')
+    '''
+    self.labelText[0].insert(END,'P1, C1\ P2, C2')
+    self.labelText[1].insert(END,'vs. all : ')
+    self.labelText[2].insert(END,'vs. %s : ' % (self.p2))
+    self.labelText[3].insert(END,'vs. %s + %s: ' % (self.p2,self.c2))
+    self.labelText[4].insert(END,'vs. %s :' % (self.c2))
 
-    self.allText[0].insert(END,'?? vs. all')
-    self.allText[1].insert(END,'%3d%%  %+.2f    /     %3d%%  %+.2f' % (master.p1WinRatioAll,master.p1StockMarginAll,master.p1WinStageAll,master.p1StageMarginAll))
-    self.allText[2].insert(END,'%3d%%  %+.2f    /     %3d%%  %+.2f' % (master.c1WinRatioAll,master.c1StockMarginAll,master.c1WinStageAll,master.c1StageMarginAll))
-    self.allText[3].insert(END,'%3d%%  %+.2f    /     %3d%%  %+.2f' % (master.p2WinRatioAll,master.p2StockMarginAll,master.p2WinStageAll,master.p2StageMarginAll))
-    self.allText[4].insert(END,'%3d%%  %+.2f    /     %3d%%  %+.2f' % (master.c2WinRatioAll,master.c2StockMarginAll,master.c2WinStageAll,master.c2StageMarginAll))
+    self.subLabelText[0].insert(END,'------------------')
+    self.subLabelText[1].insert(END,'all data     /    this stage')
+    self.subLabelText[2].insert(END,'all data     /    this stage')
+    self.subLabelText[3].insert(END,'all data     /    this stage')
+    self.subLabelText[4].insert(END,'all data     /    this stage')
+    '''
+    self.labelText[0].config(text='P1, C1\ P2, C2')
+    self.labelText[1].config(text='vs. all : ')
+    self.labelText[2].config(text='vs. %s : ' % (self.p2))
+    self.labelText[3].config(text='vs. %s + %s: ' % (self.p2,self.c2))
+    self.labelText[4].config(text='vs. %s :' % (self.c2))
 
-    self.pText[0].insert(END,'p v p')
-    self.pText[1].insert(END,'%3d%%  %+.2f    /     %3d%%  %+.2f' % (master.p1p2WinRatio,master.p1p2StockMargin,master.p1p2WinStage,master.p1p2StageMargin))
-    vals = self.textAssign([master.p1p2WinRatio,master.p1p2StockMargin,master.p1p2WinStage,master.p1p2StageMargin])
-    self.pText[3].insert(END,'%3d%%  %+.2f    /     %3d%%  %+.2f' % (vals[0],vals[1],vals[2],vals[3]))
+    self.subLabelText[0].config(text='------------------')
+    self.subLabelText[1].config(text='all data')
+    self.subLabelText[2].config(text='all data')
+    self.subLabelText[3].config(text='all data')
+    self.subLabelText[4].config(text='all data')
 
-    self.pcText[0].insert(END,'p+c v p+c')
-    self.pcText[1].insert(END,'%3d%%  %+.2f    /     %3d%%  %+.2f' % (master.p1c1p2c2WinRatio,master.p1c1p2c2StockMargin,master.p1c1p2c2WinStage,master.p1c1p2c2StageMargin))
-    vals = self.textAssign([master.p1c1p2c2WinRatio,master.p1c1p2c2StockMargin,master.p1c1p2c2WinStage,master.p1c1p2c2StageMargin])
-    self.pcText[3].insert(END,'%3d%%  %+.2f    /     %3d%%  %+.2f' % (vals[0],vals[1],vals[2],vals[3]))
+    self.allVText[0].insert(END,'all:')
+    self.allVText[1].insert(END,'--------------------')
+    self.allVText[2].insert(END,'%s  /%dx matches' % (self.stats.statString(self.stats.p2WinRatioAll,self.stats.p2StockMarginAll,reverse=True),self.stats.p2AllCount))
+    self.allVText[3].insert(END,'%s  /%dx matches' % (self.stats.statString(self.stats.p2c2WinRatioAll,self.stats.p2c2StockMarginAll,reverse=True),self.stats.p2c2AllCount))
+    self.allVText[4].insert(END,'%s  /%dx matches' % (self.stats.statString(self.stats.c2WinRatioAll,self.stats.c2StockMarginAll,reverse=True),self.stats.c2AllCount))
 
-    self.cText[0].insert(END,'c v c')
-    self.cText[2].insert(END,'%3d%%  %+.2f    /     %3d%%  %+.2f' % (master.c1c2WinRatio,master.c1c2StockMargin,master.c1c2WinStage,master.c1c2StageMargin))
-    vals = self.textAssign([master.c1c2WinRatio,master.c1c2StockMargin,master.c1c2WinStage,master.c1c2StageMargin])
-    self.cText[4].insert(END,'%3d%%  %+.2f    /     %3d%%  %+.2f' % (vals[0],vals[1],vals[2],vals[3]))
+    self.p1VText[0].insert(END,'%s:' % self.p1)
+    self.p1VText[1].insert(END,'%s  /%dx matches' % (self.stats.statString(self.stats.p1WinRatioAll,self.stats.p1StockMarginAll),self.stats.p1AllCount))
+    self.p1VText[2].insert(END,'%s  /%dx matches' % (self.stats.statString(self.stats.p1p2WinRatio,self.stats.p1p2StockMargin),self.stats.p1p2Count))
+    self.p1VText[3].insert(END,'%s  /%dx matches' % (self.stats.statString(self.stats.p2c2p1WinRatio,self.stats.p2c2p1StockMargin,reverse=True),self.stats.p2c2p1Count))
+    self.p1VText[4].insert(END,'%s  /%dx matches' % (self.stats.statString(self.stats.p1c2WinRatio,self.stats.p1c2StockMargin),self.stats.p1c2Count))
+
+    self.p1c1VText[0].insert(END,'%6s+%8s:' % (self.p1,self.c1))
+    self.p1c1VText[1].insert(END,'%s  /%dx matches' % (self.stats.statString(self.stats.p1c1WinRatioAll,self.stats.p1c1StockMarginAll),self.stats.p1c1AllCount))
+    self.p1c1VText[2].insert(END,'%s  /%dx matches' % (self.stats.statString(self.stats.p1c1p2WinRatio,self.stats.p1c1p2StockMargin),self.stats.p1c1p2Count))
+    self.p1c1VText[3].insert(END,'%s  /%dx matches' % (self.stats.statString(self.stats.p1c1p2c2WinRatio,self.stats.p1c1p2c2StockMargin),self.stats.p1c1p2c2Count))
+    self.p1c1VText[4].insert(END,'%s  /%dx matches' % (self.stats.statString(self.stats.p1c1c2WinRatio,self.stats.p1c1c2StockMargin),self.stats.p1c1c2Count))
+
+    self.c1VText[0].insert(END,'%14s:' % (self.c1))
+    self.c1VText[1].insert(END,'%s  /%dx matches' % (self.stats.statString(self.stats.c1WinRatioAll,self.stats.c1StockMarginAll),self.stats.c1AllCount))
+    self.c1VText[2].insert(END,'%s  /%dx matches' % (self.stats.statString(self.stats.p2c1WinRatio,self.stats.p2c1StockMargin,reverse=True),self.stats.p2c1Count))
+    self.c1VText[3].insert(END,'%s  /%dx matches' % (self.stats.statString(self.stats.p2c2c1WinRatio,self.stats.p2c2c1StockMargin,reverse=True),self.stats.p2c2c1Count))
+    self.c1VText[4].insert(END,'%s  /%dx matches' % (self.stats.statString(self.stats.c1c2WinRatio,self.stats.c1c2StockMargin),self.stats.c1c2Count))
+
+    self.subLabelText2[0].config(text='------------------')
+    self.subLabelText2[1].config(text='this stage')
+    self.subLabelText2[2].config(text='this stage')
+    self.subLabelText2[3].config(text='this stage')
+    self.subLabelText2[4].config(text='this stage')
+
+    self.allVText2[0].insert(END,'all:')
+    self.allVText2[1].insert(END,'--------------------')
+    self.allVText2[2].insert(END,'%s  /%dx' % (self.stats.statString(self.stats.p2WinStageAll,self.stats.p2StageMarginAll,reverse=True),self.stats.p2AllStCount))
+    self.allVText2[3].insert(END,'%s  /%dx' % (self.stats.statString(self.stats.p2c2WinStageAll,self.stats.p2c2StageMarginAll,reverse=True),self.stats.p2c2AllStCount))
+    self.allVText2[4].insert(END,'%s  /%dx' % (self.stats.statString(self.stats.c2WinStageAll,self.stats.c2StageMarginAll,reverse=True),self.stats.c2AllStCount))
+
+    self.p1VText2[0].insert(END,'%s:' % self.p1)
+    self.p1VText2[1].insert(END,'%s  /%dx' % (self.stats.statString(self.stats.p1WinStageAll,self.stats.p1StageMarginAll),self.stats.p1AllStCount))
+    self.p1VText2[2].insert(END,'%s  /%dx' % (self.stats.statString(self.stats.p1p2WinStage,self.stats.p1p2StageMargin),self.stats.p1p2StCount))
+    self.p1VText2[3].insert(END,'%s  /%dx' % (self.stats.statString(self.stats.p2c2p1WinStage,self.stats.p2c2p1StageMargin,reverse=True),self.stats.p2c2p1StCount))
+    self.p1VText2[4].insert(END,'%s  /%dx' % (self.stats.statString(self.stats.p1c2WinStage,self.stats.p1c2StageMargin),self.stats.p1c2StCount))
+
+    self.p1c1VText2[0].insert(END,'%6s+%8s:' % (self.p1,self.c1))
+    self.p1c1VText2[1].insert(END,'%s  /%dx' % (self.stats.statString(self.stats.p1c1WinStageAll,self.stats.p1c1StageMarginAll),self.stats.p1c1AllStCount))
+    self.p1c1VText2[2].insert(END,'%s  /%dx' % (self.stats.statString(self.stats.p1c1p2WinStage,self.stats.p1c1p2StageMargin),self.stats.p1c1p2StCount))
+    self.p1c1VText2[3].insert(END,'%s  /%dx' % (self.stats.statString(self.stats.p1c1p2c2WinStage,self.stats.p1c1p2c2StageMargin),self.stats.p1c1p2c2StCount))
+    self.p1c1VText2[4].insert(END,'%s  /%dx' % (self.stats.statString(self.stats.p1c1c2WinStage,self.stats.p1c1c2StageMargin),self.stats.p1c1c2StCount))
+
+    self.c1VText2[0].insert(END,'%14s:' % (self.c1))
+    self.c1VText2[1].insert(END,'%s  /%dx' % (self.stats.statString(self.stats.c1WinStageAll,self.stats.c1StageMarginAll),self.stats.c1AllStCount))
+    self.c1VText2[2].insert(END,'%s  /%dx' % (self.stats.statString(self.stats.p2c1WinStage,self.stats.p2c1StageMargin,reverse=True),self.stats.p2c1StCount))
+    self.c1VText2[3].insert(END,'%s  /%dx' % (self.stats.statString(self.stats.p2c2c1WinStage,self.stats.p2c2c1StageMargin,reverse=True),self.stats.p2c2c1StCount))
+    self.c1VText2[4].insert(END,'%s  /%dx' % (self.stats.statString(self.stats.c1c2WinStage,self.stats.c1c2StageMargin),self.stats.c1c2StCount))
 
     self.initUI()
 
+  def initUI(self):
+    self.fr.pack(fill=BOTH)
+    self.topLabels.pack(side=TOP,fill=BOTH)
+    self.subLabels.pack(side=TOP,fill=BOTH)
+    self.allV.pack(side=TOP,fill=BOTH)
+    self.p1V.pack(side=TOP,fill=BOTH)
+    self.p1c1V.pack(side=TOP,fill=BOTH)
+    self.c1V.pack(side=TOP,fill=BOTH)
+    self.subLabels2.pack(side=TOP,fill=BOTH)
+    self.allV2.pack(side=TOP,fill=BOTH)
+    self.p1V2.pack(side=TOP,fill=BOTH)
+    self.p1c1V2.pack(side=TOP,fill=BOTH)
+    self.c1V2.pack(side=TOP,fill=BOTH)
+    for i in range(5):
+      self.labelText[i].grid(row=0,column=i,columnspan=1,sticky=N+S+E+W)
+      self.subLabelText[i].grid(row=1,column=i,columnspan=1,sticky=N+S+E+W)
+      self.allVText[i].grid(row=2,column=i,columnspan=1,sticky=N+S+E+W)
+      self.p1VText[i].grid(row=3,column=i,columnspan=1,sticky=N+S+E+W)
+      self.p1c1VText[i].grid(row=4,column=i,columnspan=1,sticky=N+S+E+W)
+      self.c1VText[i].grid(row=5,column=i,columnspan=1,sticky=N+S+E+W)
+      self.subLabelText2[i].grid(row=6,column=i,columnspan=1,sticky=N+S+E+W)
+      self.allVText2[i].grid(row=7,column=i,columnspan=1,sticky=N+S+E+W)
+      self.p1VText2[i].grid(row=8,column=i,columnspan=1,sticky=N+S+E+W)
+      self.p1c1VText2[i].grid(row=9,column=i,columnspan=1,sticky=N+S+E+W)
+      self.c1VText2[i].grid(row=10,column=i,columnspan=1,sticky=N+S+E+W)
+
+    self.focus_force()
+
   def closeIt(self,event):
+    for widget in self.winfo_children():
+      widget.destroy()
+
     self.destroy()
 
   def textAssign(self,values):
@@ -1087,24 +1302,6 @@ class DataWindow(Frame):
       co=co+1
 
     return ret
-
-  def initUI(self):
-    self.fr.pack(fill=BOTH)
-    self.labels.pack(side=TOP,fill=BOTH)
-    self.stageLab.pack(side=TOP)
-    self.allData.pack(side=TOP)
-    self.pData.pack(side=TOP)
-    self.pcData.pack(side=TOP)
-    self.cData.pack(side=TOP)
-    for i in range(5):
-      self.labText[i].grid(row=0,column=i,columnspan=1,sticky=N+S+E+W)
-      self.stgText[i].grid(row=1,column=i,columnspan=1,sticky=N+S+E+W)
-      self.allText[i].grid(row=2,column=i,columnspan=1,sticky=N+S+E+W)
-      self.pText[i].grid(row=3,column=i,columnspan=1,sticky=N+S+E+W)
-      self.pcText[i].grid(row=4,column=i,columnspan=1,sticky=N+S+E+W)
-      self.cText[i].grid(row=5,column=i,columnspan=1,sticky=N+S+E+W)
-
-    self.focus_force()
 
 def onClosing():
   for widget in top.winfo_children():
