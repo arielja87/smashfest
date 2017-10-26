@@ -26,6 +26,8 @@ class MainWindow(Tk):
     self.dataFileName = os.path.abspath(os.path.join('.','smashStats.csv'))
     #self.dataFileName = os.path.abspath(os.path.join('.','junkStats.csv'))
     self.dataLoaded = 0     # haven't loaded yet
+    self.today = datetime.now()
+    self.today = self.today.strftime('%Y%m%d')
 
     self.title("FREE FOR ALL")
 
@@ -228,6 +230,23 @@ class MainWindow(Tk):
 
   def scrollDownP2(self,event):
     self.scrollCheck(2,'down')
+
+  def setFooter(self,pWin,cWin,pLose,cLose,stockMargin,stage,mode='update'):
+    if mode == 'first':
+      f=open('filename')
+      lines=f.readlines()
+      numMatches = len(lines)
+      lastThree = lines[-3:]
+      wasToday = [self.today in el for el in lastThree]
+      numToday = sum(wasToday)
+
+      for (i,el) in enumerate(lastThree):
+        if wasToday[i]:
+          self.footBar.set('%s (%s) won by %s stock(s) vs %s (%s) on %s',[pWin,cWin,pLose,cLose,stockMargin,stage],toggle=numToday-i-1)
+
+    else:
+      self.footBar.set('%s (%s) won by %s stock(s) vs %s (%s) on %s',[pWin,cWin,pLose,cLose,stockMargin,stage],toggle=0)
+      self.footBar.set('Selected : %s ... ] ',str(val)[:-1],toggle=0)
     
   def publishMatch(self,event,*args):
     # write winner to a file
@@ -1337,6 +1356,66 @@ class DataWindow(Tk):
       co=co+1
 
     return ret
+
+class FooterBar(Frame):
+  def __init__(self, master, *args, **kwargs):
+    di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in master.keys()}
+    Frame.__init__(self, master,**di)
+
+    if 'width' in kwargs.keys():
+      width = kwargs['width']
+      if width < 100:
+        width = 100
+    else:
+      width = 550
+
+    self.label = Label(self)
+    self.statBar1 = StatusBar(self)
+    self.statBar2 = StatusBar(self)
+    self.statBar3 = StatusBar(self)
+
+    self.label.grid(row=0,column=0,sticky=N+E+W+S)
+    self.statBar1.grid(row=1,column=0,sticky=N+E+W+S)
+    self.statBar2.grid(row=2,column=0,sticky=N+E+W+S)
+    self.statBar3.grid(row=3,column=0,sticky=N+E+W+S)
+    self.grid_columnconfigure(0,minsize=width-50)
+
+    self.label.config(text='Last 3 matches:')
+
+  def set(self, format, args,toggle=1):
+    if toggle == 2:
+      self.statBar3.set(format, args)
+    elif toggle == 1:
+      self.statBar2.set(format, args)
+    else:
+      self.statBar1.set(format, args)
+
+  def update(self,toggle=1):
+    if toggle == 2:
+      self.statBar3.update()
+    elif toggle == 1:
+      self.statBar2.update()
+    else:
+      self.statBar1.update()
+
+class StatusBar(Frame):
+  def __init__(self, master, *args, **kwargs):
+    di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in master.keys()}
+    Frame.__init__(self, master,di)
+
+    self.label = Label(self, bd=1, relief=SUNKEN, anchor=SW)
+    self.label.pack(fill=X)
+
+  def update(self):
+    self.label.update_idletasks()
+
+  def set(self, format, *args):
+    self.label.config(text=format % args)
+    self.label.update_idletasks()
+
+  def clear(self):
+    self.label.config(text="")
+    self.label.update_idletasks()
 
 def onClosing():
   for widget in top.winfo_children():
