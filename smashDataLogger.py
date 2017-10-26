@@ -18,7 +18,7 @@ class MainWindow(Tk):
     # Window dimension (pixels)
     self.config(bg='#fff')
     self.w = 1200
-    self.h = 650
+    self.h = 670
     self.centerWindow(self.w,self.h)
     self.colors = {'p1red':'#f55943','p2blue':'#7092be','pListGreen':'#77c18b'}
     self.playerToggle = 1
@@ -56,6 +56,7 @@ class MainWindow(Tk):
     self.P2 = PlayerHeadWindow(self,PNUM=2,FACES=self.faceImgs,BORDERCOLOR=self.colors['p2blue'],bg='#fff')
     self.Ps = PlayerListWindow(self,BORDERCOLOR=self.colors['pListGreen'],bg='#fff')
     self.mainCanv = SelectionWindow(self,bg='#fff',highlightthickness=0)
+    self.footBar = FooterBar(self)
 
     self.initUI()
 
@@ -79,6 +80,7 @@ class MainWindow(Tk):
     self.P2.grid(row=2,column=0,rowspan=2,columnspan=1,sticky=N+S+E+W)
     self.Ps.grid(row=4,column=0,rowspan=4,columnspan=1,sticky=N+S+E+W)
     self.mainCanv.grid(row=0,column=1,rowspan=8,columnspan=4,sticky=N+S+E+W)
+    self.footBar.grid(row=9,column=0,columnspan=4,sticky=N+S+E+W)
     self.mainCanv.focus_force()
 
     first = np.random.permutation(self.players)
@@ -94,6 +96,7 @@ class MainWindow(Tk):
     self.mainCanv.P2.set(p2)
     self.mainCanv.switchMode('stageButton')
     self.mainCanv.switchMode('charButton')
+    self.setFooter(toggle=-1)
 
   # different sub-functions specific to hovering/clicking a character for P1/P2, that all pass control to setCharac
   def setCharacSoftP1(self,event,*args):
@@ -231,23 +234,27 @@ class MainWindow(Tk):
   def scrollDownP2(self,event):
     self.scrollCheck(2,'down')
 
-  def setFooter(self,pWin,cWin,pLose,cLose,stockMargin,stage,mode='update'):
-    if mode == 'first':
-      f=open('filename')
+  def setFooter(self,toggle,text=''):
+    if toggle in range(3):
+      self.footBar.set('%s',text,toggle=toggle)
+    else:
+      f=open(self.dataFileName)
       lines=f.readlines()
       numMatches = len(lines)
       lastThree = lines[-3:]
       wasToday = [self.today in el for el in lastThree]
       numToday = sum(wasToday)
+      f.close()
+
+      for i in range(3):
+        self.setFooter(i,'-----------')
 
       for (i,el) in enumerate(lastThree):
         if wasToday[i]:
-          self.footBar.set('%s (%s) won by %s stock(s) vs %s (%s) on %s',[pWin,cWin,pLose,cLose,stockMargin,stage],toggle=numToday-i-1)
-
-    else:
-      self.footBar.set('%s (%s) won by %s stock(s) vs %s (%s) on %s',[pWin,cWin,pLose,cLose,stockMargin,stage],toggle=0)
-      self.footBar.set('Selected : %s ... ] ',str(val)[:-1],toggle=0)
-    
+          (dat,wp,wc,lp,lc,st,sg) = el.strip().split(',')
+          text = '%s (%s) %s %s (%s)\n%s' % (wp,wc,'>'*int(st),lp,lc,sg)
+          self.setFooter(toggle=numToday-i-1,text=text)
+         
   def publishMatch(self,event,*args):
     # write winner to a file
     if self.mainCanv.lockInWin.get():
@@ -280,10 +287,19 @@ class MainWindow(Tk):
       if answer:
         n = int(num)
         self.logIt(pWin,cWin,pLose,cLose,n,stage)
-        text = "%s's %s %s %s's %s on %s" % (pWin,cWin,'>'*n,pLose,cLose,stage)
-        tkMessageBox.showinfo('Logged',text) 
+
+        #get the previous two matches (to bump them down the recent list in the footer); update the footer
+        text = "%s (%s) %s %s (%s)\n%s" % (pWin,cWin,'>'*n,pLose,cLose,stage)
+        tNext1 = self.footBar.get(0)
+        tNext2 = self.footBar.get(1)
+        self.setFooter(toggle=0,text=text)
+        self.setFooter(toggle=1,text=tNext1)
+        self.setFooter(toggle=2,text=tNext2)
+
+        #tkMessageBox.showinfo('Logged',text) 
         self.mainCanv.kickHeads(mode='hard')
         self.mainCanv.kickStage(mode='hard')
+        self.mainCanv.switchMode('charButton')
       else:
         self.mainCanv.kickHeads()
 
@@ -1362,27 +1378,37 @@ class FooterBar(Frame):
     di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in master.keys()}
     Frame.__init__(self, master,**di)
 
-    if 'width' in kwargs.keys():
-      width = kwargs['width']
-      if width < 100:
-        width = 100
-    else:
-      width = 550
-
+    self.fn = tkFont.Font(family="Times", size=14)
     self.label = Label(self)
     self.statBar1 = StatusBar(self)
     self.statBar2 = StatusBar(self)
     self.statBar3 = StatusBar(self)
 
     self.label.grid(row=0,column=0,sticky=N+E+W+S)
-    self.statBar1.grid(row=1,column=0,sticky=N+E+W+S)
-    self.statBar2.grid(row=2,column=0,sticky=N+E+W+S)
-    self.statBar3.grid(row=3,column=0,sticky=N+E+W+S)
-    self.grid_columnconfigure(0,minsize=width-50)
+    #self.statBar1.grid(row=1,column=0,sticky=N+E+W+S)
+    #self.statBar2.grid(row=2,column=0,sticky=N+E+W+S)
+    #self.statBar3.grid(row=3,column=0,sticky=N+E+W+S)
+    self.statBar1.grid(row=0,column=1,sticky=N+E+W+S)
+    self.statBar2.grid(row=0,column=2,sticky=N+E+W+S)
+    self.statBar3.grid(row=0,column=3,sticky=N+E+W+S)
+    self.grid_columnconfigure(0,minsize=150)
+    self.grid_columnconfigure(1,minsize=325)
+    self.grid_columnconfigure(2,minsize=325)
+    self.grid_columnconfigure(3,minsize=325)
 
-    self.label.config(text='Last 3 matches:')
+    self.label.config(text='Recents:',font=self.fn)
 
-  def set(self, format, args,toggle=1):
+  def get(self,toggle):
+    if toggle == 2:
+      t = self.statBar3.label.cget('text')
+    elif toggle == 1:
+      t = self.statBar2.label.cget('text')
+    else:
+      t = self.statBar1.label.cget('text')
+
+    return t
+
+  def set(self, format, args,toggle):
     if toggle == 2:
       self.statBar3.set(format, args)
     elif toggle == 1:
@@ -1390,7 +1416,7 @@ class FooterBar(Frame):
     else:
       self.statBar1.set(format, args)
 
-  def update(self,toggle=1):
+  def update(self,toggle):
     if toggle == 2:
       self.statBar3.update()
     elif toggle == 1:
@@ -1403,14 +1429,16 @@ class StatusBar(Frame):
     di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in master.keys()}
     Frame.__init__(self, master,di)
 
-    self.label = Label(self, bd=1, relief=SUNKEN, anchor=SW)
+    self.fn = tkFont.Font(family="Times", size=12)
+    self.label = Label(self, bd=1, height=2, relief=SUNKEN, anchor=CENTER,font=self.fn)
     self.label.pack(fill=X)
 
   def update(self):
     self.label.update_idletasks()
 
   def set(self, format, *args):
-    self.label.config(text=format % args)
+    self.clear()
+    self.label.config(text=format % args, anchor=CENTER)
     self.label.update_idletasks()
 
   def clear(self):
