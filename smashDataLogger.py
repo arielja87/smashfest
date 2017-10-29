@@ -29,13 +29,13 @@ class MainWindow(Tk):
     if scaleWindow == 'large':
       self.scale = 1.2
     elif scaleWindow == 'small':
-      self.scale = .8
+      self.scale = .9
     elif scaleWindow == 'fit':
       self.scale = self.winfo_screenwidth()*.8/self.w
     else:
       self.scale = 1.
       #self.scale = 1.2
-      #self.scale = .8
+      #self.scale = .9
       #self.scale = self.winfo_screenwidth()*.8/self.w
 
     self.centerWindow(int(self.w*self.scale),int(self.h*self.scale))
@@ -79,8 +79,8 @@ class MainWindow(Tk):
 
     self.initUI()
 
-    self.bind_all('<Tab>',self.modeSwitch)
-    self.bind_all('<Escape>',self.reset)
+    self.bind('<Tab>',self.modeSwitch)
+    self.bind('<Escape>',self.reset)
     self.bind_all('<Up>',self.scrollUpP1)
     self.bind_all('<Down>',self.scrollDownP1)
     self.bind_all('<Control-Up>',self.scrollUpP2)
@@ -100,7 +100,7 @@ class MainWindow(Tk):
     self.footBar.grid(row=9,column=0,columnspan=4,sticky=N+S+E+W)
     self.mainCanv.focus_force()
     self.columnconfigure(0, weight=1)
-    self.columnconfigure(1, weight=23)
+    self.columnconfigure(1, weight=4)
 
     first = np.random.permutation(self.players)
     p1 = first[0]
@@ -788,7 +788,7 @@ class SelectionWindow(Frame):
     c2 = vars[3]
     stage = vars[4]
 
-    self.dataWin = DataWindow(file=self.master.dataFileName,p1=p1,c1=c1,p2=p2,c2=c2,stage=stage,scale=self.master.scale)
+    self.dataWin = DataWindow(self,file=self.master.dataFileName,p1=p1,c1=c1,p2=p2,c2=c2,stage=stage,scale=self.master.scale)
     self.dataWin.focus_force()
     self.dataWin.lift()
     self.dataWin.mainloop()
@@ -1112,10 +1112,10 @@ class Stats2P:
 
     return (winRatio,totCount,(winMargin,lossMargin,allMargin))
 
-class DataWindow(Tk):
-  def __init__(self, *args, **kwargs):
-    di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in dir(Tk)}
-    Tk.__init__(self, *args, **di)
+class DataWindow(Toplevel):
+  def __init__(self, master,*args, **kwargs):
+    di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in dir(Toplevel)}
+    Toplevel.__init__(self, master, **di)
 
     self.file = kwargs['file']
     self.p1 = kwargs['p1']
@@ -1131,12 +1131,12 @@ class DataWindow(Tk):
       self.scale = kwargs['scale']
     else:
       self.scale = 1.
-
+    
     self.bind_all('<Escape>',self.closeIt)
     self.bind_all('<Tab>',self.switchFrame)
 
-    self.h = 250  
-    self.w = 1500
+    self.h = int(200*self.scale)
+    self.w = int(1350*self.scale)
     
     self.colors = {'p1red':'#f55943','p2blue':'#7092be','p12blend':'#ac7886'}
     self.frMode = 1
@@ -1145,17 +1145,17 @@ class DataWindow(Tk):
 
     self.stats = Stats2P(file=self.file,p1=self.p1,c1=self.c1,p2=self.p2,c2=self.c2,stage=self.stage)
 
-    self.hf = tkFont.Font(family="Times", size=12, weight=tkFont.BOLD)
-    self.bf = tkFont.Font(family="Times", size=12, weight=tkFont.BOLD)
+    self.hf = tkFont.Font(family="Times", size=int(14*self.scale), weight=tkFont.BOLD)
+    self.bf = tkFont.Font(family="Times", size=int(12*self.scale))
 
-    self.fr = LabelFrame(self)
-    self.fr.config(highlightbackground='#000',highlightthickness=4,font=self.hf)
-    self.topLabels = LabelFrame(self.fr,font=self.bf)
-    self.subLabels = LabelFrame(self.fr,font=self.bf)
-    self.allV = LabelFrame(self.fr,font=self.bf)
-    self.p1V = LabelFrame(self.fr,font=self.bf)
-    self.p1c1V = LabelFrame(self.fr,font=self.bf)
-    self.c1V = LabelFrame(self.fr,font=self.bf)
+    self.fr = Frame(self)
+    self.fr.config(highlightbackground='#000',highlightthickness=4)
+    self.topLabels = Frame(self.fr)
+    self.subLabels = Frame(self.fr)
+    self.allV = Frame(self.fr)
+    self.p1V = Frame(self.fr)
+    self.p1c1V = Frame(self.fr)
+    self.c1V = Frame(self.fr)
 
     self.labelText = {}
     self.subLabelText = {}
@@ -1165,14 +1165,14 @@ class DataWindow(Tk):
     self.c1VText = {}
 
     if self.stage:
-      self.fr2 = LabelFrame(self)
-      self.fr2.config(highlightbackground='#000',highlightthickness=4,font=self.hf)
-      self.topLabels2 = LabelFrame(self.fr2,font=self.bf)
-      self.subLabels2 = LabelFrame(self.fr2,font=self.bf)
-      self.allV2 = LabelFrame(self.fr2,font=self.bf)
-      self.p1V2 = LabelFrame(self.fr2,font=self.bf)
-      self.p1c1V2 = LabelFrame(self.fr2,font=self.bf)
-      self.c1V2 = LabelFrame(self.fr2,font=self.bf)
+      self.fr2 = Frame(self)
+      self.fr2.config(highlightbackground='#000',highlightthickness=4)
+      self.topLabels2 = Frame(self.fr2)
+      self.subLabels2 = Frame(self.fr2)
+      self.allV2 = Frame(self.fr2)
+      self.p1V2 = Frame(self.fr2)
+      self.p1c1V2 = Frame(self.fr2)
+      self.c1V2 = Frame(self.fr2)
       self.labelText2 = {}
       self.subLabelText2 = {}
       self.allVText2 = {}
@@ -1184,21 +1184,22 @@ class DataWindow(Tk):
       if i == 0:
         wid = 15
       else:
-        wid = 40
+        wid = 28
 
-      self.labelText[i] = Text(self.topLabels,height=1,width=wid,highlightthickness=2,relief=FLAT)
-      self.subLabelText[i] = Text(self.subLabels,height=1,width=wid,highlightthickness=2,relief=FLAT)
-      self.allVText[i] = Text(self.allV,height=1,width=wid,highlightthickness=2)
-      self.p1VText[i] = Text(self.p1V,height=1,width=wid,highlightthickness=2)
-      self.p1c1VText[i] = Text(self.p1c1V,height=1,width=wid,highlightthickness=2)
-      self.c1VText[i] = Text(self.c1V,height=1,width=wid,highlightthickness=2)
+      self.labelText[i] = Text(self.topLabels,height=1,width=wid,highlightthickness=2,relief=FLAT,font=self.hf)
+      self.subLabelText[i] = Text(self.subLabels,height=1,width=wid,highlightthickness=2,relief=FLAT,font=self.hf)
+      self.allVText[i] = Text(self.allV,height=1,width=wid,highlightthickness=2,font=self.bf)
+      self.p1VText[i] = Text(self.p1V,height=1,width=wid,highlightthickness=2,font=self.bf)
+      self.p1c1VText[i] = Text(self.p1c1V,height=1,width=wid,highlightthickness=2,font=self.bf)
+      self.c1VText[i] = Text(self.c1V,height=1,width=wid,highlightthickness=2,font=self.bf)
+
       if self.stage:
-        self.labelText2[i] = Text(self.topLabels2,height=1,width=wid,highlightthickness=2,relief=FLAT)
-        self.subLabelText2[i] = Text(self.subLabels2,height=1,width=wid,highlightthickness=2,relief=FLAT)
-        self.allVText2[i] = Text(self.allV2,height=1,width=wid,highlightthickness=2)
-        self.p1VText2[i] = Text(self.p1V2,height=1,width=wid,highlightthickness=2)
-        self.p1c1VText2[i] = Text(self.p1c1V2,height=1,width=wid,highlightthickness=2)
-        self.c1VText2[i] = Text(self.c1V2,height=1,width=wid,highlightthickness=2)
+        self.labelText2[i] = Text(self.topLabels2,height=1,width=wid,highlightthickness=2,relief=FLAT,font=self.hf)
+        self.subLabelText2[i] = Text(self.subLabels2,height=1,width=wid,highlightthickness=2,relief=FLAT,font=self.hf)
+        self.allVText2[i] = Text(self.allV2,height=1,width=wid,highlightthickness=2,font=self.bf)
+        self.p1VText2[i] = Text(self.p1V2,height=1,width=wid,highlightthickness=2,font=self.bf)
+        self.p1c1VText2[i] = Text(self.p1c1V2,height=1,width=wid,highlightthickness=2,font=self.bf)
+        self.c1VText2[i] = Text(self.c1V2,height=1,width=wid,highlightthickness=2,font=self.bf)
     
     self.labelText[2].config(highlightbackground=self.colors['p2blue'])
     self.labelText[3].config(highlightbackground=self.colors['p2blue'])
@@ -1206,11 +1207,8 @@ class DataWindow(Tk):
       self.labelText2[2].config(highlightbackground=self.colors['p2blue'])
       self.labelText2[3].config(highlightbackground=self.colors['p2blue'])
 
-    self.p1VText[0].config(highlightbackground=self.colors['p1red'])
-    self.p1c1VText[0].config(highlightbackground=self.colors['p1red'])
-
-    self.p1VText[0].config(highlightbackground=self.colors['p1red'])
-    self.p1c1VText[0].config(highlightbackground=self.colors['p1red'])
+    self.p1VText[0].config(highlightbackground=self.colors['p1red'],font=self.hf)
+    self.p1c1VText[0].config(highlightbackground=self.colors['p1red'],font=self.hf)
     self.allVText[2].config(highlightbackground=self.colors['p2blue'])
     self.allVText[3].config(highlightbackground=self.colors['p2blue'])
     self.p1VText[1].config(highlightbackground=self.colors['p1red'])
@@ -1219,13 +1217,14 @@ class DataWindow(Tk):
     self.p1c1VText[1].config(highlightbackground=self.colors['p1red'])
     self.p1c1VText[2].config(highlightbackground=self.colors['p1red'])
     self.p1c1VText[3].config(highlightbackground=self.colors['p12blend'])
+    self.allVText[0].config(font=self.hf)
+    self.p1VText[0].config(font=self.hf)
+    self.p1c1VText[0].config(font=self.hf)
+    self.c1VText[0].config(font=self.hf)
 
     if self.stage:
-      self.p1VText2[0].config(highlightbackground=self.colors['p1red'])
-      self.p1c1VText2[0].config(highlightbackground=self.colors['p1red'])
-
-      self.p1VText2[0].config(highlightbackground=self.colors['p1red'])
-      self.p1c1VText2[0].config(highlightbackground=self.colors['p1red'])
+      self.p1VText2[0].config(highlightbackground=self.colors['p1red'],font=self.hf)
+      self.p1c1VText2[0].config(highlightbackground=self.colors['p1red'],font=self.hf)
       self.allVText2[2].config(highlightbackground=self.colors['p2blue'])
       self.allVText2[3].config(highlightbackground=self.colors['p2blue'])
       self.p1VText2[1].config(highlightbackground=self.colors['p1red'])
@@ -1234,75 +1233,79 @@ class DataWindow(Tk):
       self.p1c1VText2[1].config(highlightbackground=self.colors['p1red'])
       self.p1c1VText2[2].config(highlightbackground=self.colors['p1red'])
       self.p1c1VText2[3].config(highlightbackground=self.colors['p12blend'])
+      self.allVText2[0].config(font=self.hf)
+      self.p1VText2[0].config(font=self.hf)
+      self.p1c1VText2[0].config(font=self.hf)
+      self.c1VText2[0].config(font=self.hf)
 
-    self.labelText[0].insert(END,'P1, C1\ P2, C2')
+    self.labelText[0].insert(END,'{:<14}'.format('P1, C1\ P2, C2'))
     self.labelText[1].insert(END,'vs. all : ')
     self.labelText[2].insert(END,'vs. %s : ' % (self.p2))
     self.labelText[3].insert(END,'vs. %s + %s: ' % (self.p2,self.c2))
     self.labelText[4].insert(END,'vs. %s :' % (self.c2))
 
-    self.subLabelText[0].insert(END,'------------------')
+    self.subLabelText[0].insert(END,'{:<14}'.format('------------------'))
     self.subLabelText[1].insert(END,'all data')
     self.subLabelText[2].insert(END,'all data')
     self.subLabelText[3].insert(END,'all data')
     self.subLabelText[4].insert(END,'all data')
 
-    self.allVText[0].insert(END,'all:')
+    self.allVText[0].insert(END,'{:<14}'.format('all:'))
     self.allVText[1].insert(END,'-----------------  /%dx logged games' % self.stats.allCount)
     self.allVText[2].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p2WinRatioAll,self.stats.p2StockMarginAll,reverse=True),self.stats.p2AllCount))
     self.allVText[3].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p2c2WinRatioAll,self.stats.p2c2StockMarginAll,reverse=True),self.stats.p2c2AllCount))
     self.allVText[4].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.c2WinRatioAll,self.stats.c2StockMarginAll,reverse=True),self.stats.c2AllCount))
 
-    self.p1VText[0].insert(END,'%s:' % self.p1)
+    self.p1VText[0].insert(END,'{:<14}'.format(self.p1))
     self.p1VText[1].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p1WinRatioAll,self.stats.p1StockMarginAll),self.stats.p1AllCount))
     self.p1VText[2].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p1p2WinRatio,self.stats.p1p2StockMargin),self.stats.p1p2Count))
     self.p1VText[3].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p2c2p1WinRatio,self.stats.p2c2p1StockMargin,reverse=True),self.stats.p2c2p1Count))
     self.p1VText[4].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p1c2WinRatio,self.stats.p1c2StockMargin),self.stats.p1c2Count))
 
-    self.p1c1VText[0].insert(END,'%6s+%8s:' % (self.p1,self.c1))
+    self.p1c1VText[0].insert(END,'{0:<6}{1:<1}{2:<8}'.format(self.p1,'+',self.c1))
     self.p1c1VText[1].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p1c1WinRatioAll,self.stats.p1c1StockMarginAll),self.stats.p1c1AllCount))
     self.p1c1VText[2].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p1c1p2WinRatio,self.stats.p1c1p2StockMargin),self.stats.p1c1p2Count))
     self.p1c1VText[3].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p1c1p2c2WinRatio,self.stats.p1c1p2c2StockMargin),self.stats.p1c1p2c2Count))
     self.p1c1VText[4].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p1c1c2WinRatio,self.stats.p1c1c2StockMargin),self.stats.p1c1c2Count))
 
-    self.c1VText[0].insert(END,'%14s:' % (self.c1))
+    self.c1VText[0].insert(END,'{:<14}'.format(self.c1))
     self.c1VText[1].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.c1WinRatioAll,self.stats.c1StockMarginAll),self.stats.c1AllCount))
     self.c1VText[2].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p2c1WinRatio,self.stats.p2c1StockMargin,reverse=True),self.stats.p2c1Count))
     self.c1VText[3].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p2c2c1WinRatio,self.stats.p2c2c1StockMargin,reverse=True),self.stats.p2c2c1Count))
     self.c1VText[4].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.c1c2WinRatio,self.stats.c1c2StockMargin),self.stats.c1c2Count))
 
     if self.stage:
-      self.labelText2[0].insert(END,'P1, C1\ P2, C2')
+      self.labelText2[0].insert(END,'{:<14}'.format('P1, C1\ P2, C2'))
       self.labelText2[1].insert(END,'vs. all : ')
       self.labelText2[2].insert(END,'vs. %s : ' % (self.p2))
       self.labelText2[3].insert(END,'vs. %s + %s: ' % (self.p2,self.c2))
       self.labelText2[4].insert(END,'vs. %s :' % (self.c2))
 
-      self.subLabelText2[0].insert(END,'------------------')
+      self.subLabelText2[0].insert(END,'{:<14}'.format('------------------'))
       self.subLabelText2[1].insert(END,'this stage')
       self.subLabelText2[2].insert(END,'this stage')
       self.subLabelText2[3].insert(END,'this stage')
       self.subLabelText2[4].insert(END,'this stage')
 
-      self.allVText2[0].insert(END,'all:')
+      self.allVText2[0].insert(END,'{:<14}'.format('all:'))
       self.allVText2[1].insert(END,'-----------------  /%dx logged games' % self.stats.stageCount)
       self.allVText2[2].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p2WinStageAll,self.stats.p2StageMarginAll,reverse=True),self.stats.p2AllStCount))
       self.allVText2[3].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p2c2WinStageAll,self.stats.p2c2StageMarginAll,reverse=True),self.stats.p2c2AllStCount))
       self.allVText2[4].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.c2WinStageAll,self.stats.c2StageMarginAll,reverse=True),self.stats.c2AllStCount))
 
-      self.p1VText2[0].insert(END,'%s:' % self.p1)
+      self.p1VText2[0].insert(END,'{:<14}'.format(self.p1))
       self.p1VText2[1].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p1WinStageAll,self.stats.p1StageMarginAll),self.stats.p1AllStCount))
       self.p1VText2[2].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p1p2WinStage,self.stats.p1p2StageMargin),self.stats.p1p2StCount))
       self.p1VText2[3].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p2c2p1WinStage,self.stats.p2c2p1StageMargin,reverse=True),self.stats.p2c2p1StCount))
       self.p1VText2[4].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p1c2WinStage,self.stats.p1c2StageMargin),self.stats.p1c2StCount))
 
-      self.p1c1VText2[0].insert(END,'%6s+%8s:' % (self.p1,self.c1))
+      self.p1c1VText2[0].insert(END,'{0:<6}{1:<1}{2:<8}'.format(self.p1,'+',self.c1))
       self.p1c1VText2[1].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p1c1WinStageAll,self.stats.p1c1StageMarginAll),self.stats.p1c1AllStCount))
       self.p1c1VText2[2].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p1c1p2WinStage,self.stats.p1c1p2StageMargin),self.stats.p1c1p2StCount))
       self.p1c1VText2[3].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p1c1p2c2WinStage,self.stats.p1c1p2c2StageMargin),self.stats.p1c1p2c2StCount))
       self.p1c1VText2[4].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p1c1c2WinStage,self.stats.p1c1c2StageMargin),self.stats.p1c1c2StCount))
 
-      self.c1VText2[0].insert(END,'%14s:' % (self.c1))
+      self.c1VText2[0].insert(END,'{:<14}'.format(self.c1))
       self.c1VText2[1].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.c1WinStageAll,self.stats.c1StageMarginAll),self.stats.c1AllStCount))
       self.c1VText2[2].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p2c1WinStage,self.stats.p2c1StageMargin,reverse=True),self.stats.p2c1StCount))
       self.c1VText2[3].insert(END,'%s  /%dx games' % (self.stats.statString(self.stats.p2c2c1WinStage,self.stats.p2c2c1StageMargin,reverse=True),self.stats.p2c2c1StCount))
@@ -1318,14 +1321,7 @@ class DataWindow(Tk):
     self.p1V.pack(side=TOP,fill=BOTH)
     self.p1c1V.pack(side=TOP,fill=BOTH)
     self.c1V.pack(side=TOP,fill=BOTH)
-    if self.stage:
-      self.fr2.place(relx=0.5,rely=0.5, anchor=CENTER)
-      self.subLabels2.pack(side=TOP,fill=BOTH)
-      self.topLabels2.pack(side=TOP,fill=BOTH)
-      self.allV2.pack(side=TOP,fill=BOTH)
-      self.p1V2.pack(side=TOP,fill=BOTH)
-      self.p1c1V2.pack(side=TOP,fill=BOTH)
-      self.c1V2.pack(side=TOP,fill=BOTH)
+
     for i in range(5):
       self.labelText[i].grid(row=0,column=i,columnspan=1,sticky=N+S+E+W)
       self.subLabelText[i].grid(row=1,column=i,columnspan=1,sticky=N+S+E+W)
@@ -1334,7 +1330,23 @@ class DataWindow(Tk):
       self.p1c1VText[i].grid(row=4,column=i,columnspan=1,sticky=N+S+E+W)
       self.c1VText[i].grid(row=5,column=i,columnspan=1,sticky=N+S+E+W)
 
+    for el in [self.subLabels,self.topLabels,self.allV,self.p1V,self.p1c1V,self.c1V]:
+      el.columnconfigure(0, weight=1)
+      el.columnconfigure(1, weight=4)
+      el.columnconfigure(2, weight=4)
+      el.columnconfigure(3, weight=4)
+      el.columnconfigure(4, weight=4)
+
+    # if stage chosen
     if self.stage:
+      self.fr2.place(relx=0.5,rely=0.5, anchor=CENTER)
+      self.subLabels2.pack(side=TOP,fill=BOTH)
+      self.topLabels2.pack(side=TOP,fill=BOTH)
+      self.allV2.pack(side=TOP,fill=BOTH)
+      self.p1V2.pack(side=TOP,fill=BOTH)
+      self.p1c1V2.pack(side=TOP,fill=BOTH)
+      self.c1V2.pack(side=TOP,fill=BOTH)
+
       for i in range(5):
         self.labelText2[i].grid(row=0,column=i,columnspan=1,sticky=N+S+E+W)
         self.subLabelText2[i].grid(row=1,column=i,columnspan=1,sticky=N+S+E+W)
@@ -1342,6 +1354,13 @@ class DataWindow(Tk):
         self.p1VText2[i].grid(row=3,column=i,columnspan=1,sticky=N+S+E+W)
         self.p1c1VText2[i].grid(row=4,column=i,columnspan=1,sticky=N+S+E+W)
         self.c1VText2[i].grid(row=5,column=i,columnspan=1,sticky=N+S+E+W)
+
+      for el in [self.subLabels2,self.topLabels2,self.allV2,self.p1V2,self.p1c1V2,self.c1V2]:
+        el.columnconfigure(0, weight=1)
+        el.columnconfigure(1, weight=4)
+        el.columnconfigure(2, weight=4)
+        el.columnconfigure(3, weight=4)
+        el.columnconfigure(4, weight=4)
 
     self.fr.lift()
     self.focus_force()
@@ -1359,6 +1378,9 @@ class DataWindow(Tk):
     for widget in self.winfo_children():
       widget.destroy()
 
+    self.unbind_all('<Escape>')
+    self.unbind_all('<Tab>')
+
     self.destroy()
 
   def switchFrame(self,event):
@@ -1366,9 +1388,11 @@ class DataWindow(Tk):
       if self.frMode:
         self.frMode = 0
         self.fr2.lift()
+        self.focus_force()
       else:
         self.frMode = 1
         self.fr.lift()
+        self.focus_force()
 
   def textAssign(self,values):
     co = 0
