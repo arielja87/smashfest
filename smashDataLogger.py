@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import division
 from Tkinter import *
 import tkFont
 import tkMessageBox
@@ -15,17 +16,33 @@ class MainWindow(Tk):
     di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in dir(Tk)}
     Tk.__init__(self, *args, **di)
 
+    if 'scaleWindow' in kwargs:
+      scaleWindow = kwargs['scaleWindow']
+    else:
+      scaleWindow = 'medium'
+
     # Window dimension (pixels)
     self.config(bg='#fff')
     self.w = 1200
     self.h = 670
-    self.centerWindow(self.w,self.h)
+    
+    if scaleWindow == 'large':
+      self.scale = 1.2
+    elif scaleWindow == 'small':
+      self.scale = .8
+    elif scaleWindow == 'fit':
+      self.scale = self.winfo_screenwidth()*.8/self.w
+    else:
+      self.scale = 1.
+      #self.scale = 1.2
+      #self.scale = .8
+      #self.scale = self.winfo_screenwidth()*.8/self.w
+
+    self.centerWindow(int(self.w*self.scale),int(self.h*self.scale))
     self.colors = {'p1red':'#f55943','p2blue':'#7092be','pListGreen':'#77c18b'}
-    self.playerToggle = 1
     self.dataFileName = 'smashStats.csv'
     self.dataFileName = os.path.abspath(os.path.join('.','smashStats.csv'))
     #self.dataFileName = os.path.abspath(os.path.join('.','junkStats.csv'))
-    self.dataLoaded = 0     # haven't loaded yet
     self.today = datetime.now()
     self.today = self.today.strftime('%Y%m%d')
 
@@ -48,9 +65,11 @@ class MainWindow(Tk):
     #players!
     self.players = ['Allen','Brett','Joe','Josh','Ryan','Sean','Torben']
     self.nickNames = {'Allen':'CharLord','Brett':u'\u00c7o\u00e7k','Josh':u'\u00c7\u00f2\u00ecT','Torben':u'BUTTS'}
+    self.avatars = {}
 
     #images of character faces and icons
-    self.faceImgs = {el:ImageTk.PhotoImage(Image.open(os.path.abspath(os.path.join('.','Faces','%s.gif')) % el)) for el in self.characters if el != 'Logo'}\
+    self.faceImgs = {el:ImageTk.PhotoImage(Image.open(os.path.abspath(os.path.join('.','Faces','%s.gif')) % el).resize((int(80*self.scale),int(56*self.scale)),Image.ANTIALIAS)) for el in self.characters if el != 'Logo'}\
+
 
     self.P1 = PlayerHeadWindow(self,PNUM=1,FACES=self.faceImgs,BORDERCOLOR=self.colors['p1red'],bg='#fff')
     self.P2 = PlayerHeadWindow(self,PNUM=2,FACES=self.faceImgs,BORDERCOLOR=self.colors['p2blue'],bg='#fff')
@@ -73,8 +92,6 @@ class MainWindow(Tk):
     self.mainCanv.charLockP2.trace('w',self.setCharacHardP2)
     self.mainCanv.lockInWin.trace('w',self.publishMatch)
 
-    #self.getMatchupData('Sean','CaptainFalcon','Torben','CaptainFalcon','pokemonStadium2')
-
   def initUI(self):
     self.P1.grid(row=0,column=0,rowspan=2,columnspan=1,sticky=N+S+E+W)
     self.P2.grid(row=2,column=0,rowspan=2,columnspan=1,sticky=N+S+E+W)
@@ -82,6 +99,8 @@ class MainWindow(Tk):
     self.mainCanv.grid(row=0,column=1,rowspan=8,columnspan=4,sticky=N+S+E+W)
     self.footBar.grid(row=9,column=0,columnspan=4,sticky=N+S+E+W)
     self.mainCanv.focus_force()
+    self.columnconfigure(0, weight=1)
+    self.columnconfigure(1, weight=23)
 
     first = np.random.permutation(self.players)
     p1 = first[0]
@@ -144,14 +163,6 @@ class MainWindow(Tk):
       self.mainCanv.switchMode('charButton')
     elif self.mainCanv.toggleMode.get() == 'charButton':
       self.mainCanv.switchMode('stageButton')
-
-  def pSwitch(self,event=''):
-      if self.playerToggle == 1:
-        self.playerToggle = 2
-        self.P1.kickCharacter(mode='soft') #so switching mode mid-hover doesn't leave a char-head lingering
-      elif self.playerToggle == 2:
-        self.playerToggle = 1
-        self.P2.kickCharacter(mode='soft') #so switching mode mid-hover doesn't leave a char-head lingering
 
   def reset(self,event=''):
     # on Esc-press clear stockHeads, clear stage selection, clear character selection, reset toggleMode to character window
@@ -341,13 +352,13 @@ class PlayerHeadWindow(Frame):
     self.nameW = 10
 
     #canvas sizing, placement
-    self.px = 50
-    self.py = 40
+    self.px = int(50*master.scale)
+    self.py = int(40*master.scale)
     self.pW = self.px*2
     self.pH = self.py*2
 
-    self.ft = tkFont.Font(family="Times", size=24, weight=tkFont.BOLD, slant=tkFont.ITALIC)
-    self.fn = tkFont.Font(family="Times", size=28, weight=tkFont.BOLD)
+    self.ft = tkFont.Font(family="Times", size=int(24*master.scale), weight=tkFont.BOLD, slant=tkFont.ITALIC)
+    self.fn = tkFont.Font(family="Times", size=int(28*master.scale), weight=tkFont.BOLD)
 
     #player 1/2 text
     self.PnumText = Text(self,height=self.numH,width=self.numW,font=self.ft)
@@ -417,12 +428,12 @@ class PlayerListWindow(Frame):
     #text box sizing
     self.numH = 1
     self.numW = 15
-    self.nameH = 320
-    self.nameW = 130
+    self.nameH = int(320*master.scale)
+    self.nameW = int(130*master.scale)
 
     #fonts
-    self.ft = tkFont.Font(family="Times", size=24, weight=tkFont.BOLD, slant=tkFont.ITALIC)
-    self.fn = tkFont.Font(family="Times", size=16, weight=tkFont.BOLD)
+    self.ft = tkFont.Font(family="Times", size=int(24*master.scale), weight=tkFont.BOLD, slant=tkFont.ITALIC)
+    self.fn = tkFont.Font(family="Times", size=int(16*master.scale), weight=tkFont.BOLD)
 
     #label text
     self.PlistText = Text(self,height=self.numH,width=self.numW,font=self.ft)
@@ -465,22 +476,18 @@ class PlayerListWindow(Frame):
     for name in sorted(self.players):
       self.labels[name].pack(side=TOP)
 
-    #self.PnamesBoxFrame.pack(side=TOP)
-    #self.PnamesCanv.place()
-
-
 class SelectionWindow(Frame):
   def __init__(self, master, *args, **kwargs):
     di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in master.keys()}
     Frame.__init__(self, master, di)
     
     #dimensions
-    self.canH = 598
-    self.canW = 900
+    self.canH = int(598*master.scale)
+    self.canW = int(900*master.scale)
     self.scaleX = self.canW/1183.
     self.scaleY = self.canH/787.
-    self.sx = 792
-    self.sy = 497
+    self.sx = int(792*master.scale)
+    self.sy = int(497*master.scale)
     
     #vars for binding mouse movement/selection
     self.charTraceP1 = StringVar(self)    #stores character name under mouse; NA if no hover
@@ -518,13 +525,13 @@ class SelectionWindow(Frame):
 
     #canvas where all the action happens
     self.charStageStock = Canvas(self,height=self.canH,width=self.canW,bg='#fff')
-    self.iconImgs = {el:ImageTk.PhotoImage(Image.open(os.path.abspath(os.path.join('.','Thumbs','%s.jpg')) % el)) for el in self.characters if el != 'QuestionMark'}
-    self.stageImgs = {el:PhotoImage(file = os.path.join('.','Stages','%s.gif') % el) for el in self.stages}
+    self.iconImgs = {el:ImageTk.PhotoImage(Image.open(os.path.abspath(os.path.join('.','Thumbs','%s.jpg')) % el).resize((int(64*master.scale),int(64*master.scale)),Image.ANTIALIAS)) for el in self.characters if el != 'QuestionMark'}
+    self.stageImgs = {el:ImageTk.PhotoImage(Image.open(os.path.abspath(os.path.join('.','Stages','%s.gif')) % el).resize((int(160*master.scale),int(160*master.scale)),Image.ANTIALIAS)) for el in self.stages}
 
     #actual images
-    self.charImg = ImageTk.PhotoImage(Image.open(os.path.abspath(os.path.join('.','Banners','charBanner.jpg'))))
+    self.charImg = ImageTk.PhotoImage(Image.open(os.path.abspath(os.path.join('.','Banners','charBanner.jpg'))).resize((int(900*master.scale),int(598*master.scale)),Image.ANTIALIAS))
+    self.stagImg = ImageTk.PhotoImage(Image.open(os.path.abspath(os.path.join('.','Banners','stageBanner.jpg'))).resize((int(900*master.scale),int(598*master.scale)),Image.ANTIALIAS))
     self.charStageStock.create_image(self.canW/2,self.canH/2,image=self.charImg,tags='charButton')
-    self.stagImg = ImageTk.PhotoImage(Image.open(os.path.abspath(os.path.join('.','Banners','stageBanner.jpg'))))
     self.charStageStock.create_image(self.canW/2,self.canH/2,image=self.stagImg,tags='stageButton')
     self.charStageStock.tag_raise('charButton')
 
@@ -781,7 +788,7 @@ class SelectionWindow(Frame):
     c2 = vars[3]
     stage = vars[4]
 
-    self.dataWin = DataWindow(file=self.master.dataFileName,p1=p1,c1=c1,p2=p2,c2=c2,stage=stage)
+    self.dataWin = DataWindow(file=self.master.dataFileName,p1=p1,c1=c1,p2=p2,c2=c2,stage=stage,scale=self.master.scale)
     self.dataWin.focus_force()
     self.dataWin.lift()
     self.dataWin.mainloop()
@@ -1120,10 +1127,15 @@ class DataWindow(Tk):
     else:
       self.stage = ''
 
+    if 'scale' in kwargs.keys():
+      self.scale = kwargs['scale']
+    else:
+      self.scale = 1.
+
     self.bind_all('<Escape>',self.closeIt)
     self.bind_all('<Tab>',self.switchFrame)
-    
-    self.h = 200  
+
+    self.h = 250  
     self.w = 1500
     
     self.colors = {'p1red':'#f55943','p2blue':'#7092be','p12blend':'#ac7886'}
@@ -1133,17 +1145,17 @@ class DataWindow(Tk):
 
     self.stats = Stats2P(file=self.file,p1=self.p1,c1=self.c1,p2=self.p2,c2=self.c2,stage=self.stage)
 
-    self.headFont = tkFont.Font(family="Times", size=12, weight=tkFont.BOLD)
-    self.bodyFont = tkFont.Font(family="Times", size=12)
+    self.hf = tkFont.Font(family="Times", size=12, weight=tkFont.BOLD)
+    self.bf = tkFont.Font(family="Times", size=12, weight=tkFont.BOLD)
 
     self.fr = LabelFrame(self)
-    self.fr.config(highlightbackground='#000',highlightthickness=4)
-    self.topLabels = LabelFrame(self.fr,font=self.headFont)
-    self.subLabels = LabelFrame(self.fr,font=self.bodyFont)
-    self.allV = LabelFrame(self.fr,font=self.bodyFont)
-    self.p1V = LabelFrame(self.fr,font=self.bodyFont)
-    self.p1c1V = LabelFrame(self.fr,font=self.bodyFont)
-    self.c1V = LabelFrame(self.fr,font=self.bodyFont)
+    self.fr.config(highlightbackground='#000',highlightthickness=4,font=self.hf)
+    self.topLabels = LabelFrame(self.fr,font=self.bf)
+    self.subLabels = LabelFrame(self.fr,font=self.bf)
+    self.allV = LabelFrame(self.fr,font=self.bf)
+    self.p1V = LabelFrame(self.fr,font=self.bf)
+    self.p1c1V = LabelFrame(self.fr,font=self.bf)
+    self.c1V = LabelFrame(self.fr,font=self.bf)
 
     self.labelText = {}
     self.subLabelText = {}
@@ -1154,13 +1166,13 @@ class DataWindow(Tk):
 
     if self.stage:
       self.fr2 = LabelFrame(self)
-      self.fr2.config(highlightbackground='#000',highlightthickness=4)
-      self.topLabels2 = LabelFrame(self.fr2,font=self.headFont)
-      self.subLabels2 = LabelFrame(self.fr2,font=self.bodyFont)
-      self.allV2 = LabelFrame(self.fr2,font=self.bodyFont)
-      self.p1V2 = LabelFrame(self.fr2,font=self.bodyFont)
-      self.p1c1V2 = LabelFrame(self.fr2,font=self.bodyFont)
-      self.c1V2 = LabelFrame(self.fr2,font=self.bodyFont)
+      self.fr2.config(highlightbackground='#000',highlightthickness=4,font=self.hf)
+      self.topLabels2 = LabelFrame(self.fr2,font=self.bf)
+      self.subLabels2 = LabelFrame(self.fr2,font=self.bf)
+      self.allV2 = LabelFrame(self.fr2,font=self.bf)
+      self.p1V2 = LabelFrame(self.fr2,font=self.bf)
+      self.p1c1V2 = LabelFrame(self.fr2,font=self.bf)
+      self.c1V2 = LabelFrame(self.fr2,font=self.bf)
       self.labelText2 = {}
       self.subLabelText2 = {}
       self.allVText2 = {}
@@ -1222,7 +1234,7 @@ class DataWindow(Tk):
       self.p1c1VText2[1].config(highlightbackground=self.colors['p1red'])
       self.p1c1VText2[2].config(highlightbackground=self.colors['p1red'])
       self.p1c1VText2[3].config(highlightbackground=self.colors['p12blend'])
-    
+
     self.labelText[0].insert(END,'P1, C1\ P2, C2')
     self.labelText[1].insert(END,'vs. all : ')
     self.labelText[2].insert(END,'vs. %s : ' % (self.p2))
@@ -1378,7 +1390,8 @@ class FooterBar(Frame):
     di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in master.keys()}
     Frame.__init__(self, master,**di)
 
-    self.fn = tkFont.Font(family="Times", size=14)
+    self.scale = master.scale
+    self.fn = tkFont.Font(family="Times", size=int(14*self.scale))
     self.label = Label(self)
     self.statBar1 = StatusBar(self)
     self.statBar2 = StatusBar(self)
@@ -1391,10 +1404,10 @@ class FooterBar(Frame):
     self.statBar1.grid(row=0,column=1,sticky=N+E+W+S)
     self.statBar2.grid(row=0,column=2,sticky=N+E+W+S)
     self.statBar3.grid(row=0,column=3,sticky=N+E+W+S)
-    self.grid_columnconfigure(0,minsize=150)
-    self.grid_columnconfigure(1,minsize=325)
-    self.grid_columnconfigure(2,minsize=325)
-    self.grid_columnconfigure(3,minsize=325)
+    self.grid_columnconfigure(0,minsize=int(150*self.scale))
+    self.grid_columnconfigure(1,minsize=int(325*self.scale))
+    self.grid_columnconfigure(2,minsize=int(325*self.scale))
+    self.grid_columnconfigure(3,minsize=int(325*self.scale))
 
     self.label.config(text='Recents:',font=self.fn)
 
@@ -1429,7 +1442,7 @@ class StatusBar(Frame):
     di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in master.keys()}
     Frame.__init__(self, master,di)
 
-    self.fn = tkFont.Font(family="Times", size=12)
+    self.fn = tkFont.Font(family="Times", size=int(12*master.scale))
     self.label = Label(self, bd=1, height=2, relief=SUNKEN, anchor=CENTER,font=self.fn)
     self.label.pack(fill=X)
 
@@ -1445,6 +1458,37 @@ class StatusBar(Frame):
     self.label.config(text="")
     self.label.update_idletasks()
 
+class PlayerPopup(Tk):
+  def __init__(self, *args, **kwargs):
+    di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in dir(Tk)}
+    Tk.__init__(self, *args, **di)
+
+    self.fn = tkFont.Font(family='Times',size=20)
+    self.label1 = Label(self,font=self.fn)
+    self.label2 = Label(self,font=self.fn)
+    self.regulars = Listbox(self,font=self.fn)
+    self.playing = Listbox(self,font=self.fn)
+    self.entry = Entry(self,font=self.fn)
+
+    self.label1.config(text='Regulars:',font=self.fn)
+    self.label2.config(text='Confirmed:',font=self.fn)
+    for name in ['Allen','Brett','Joe','Josh','Ryan','Sean','Torben']:
+      self.regulars.insert(END,name)
+
+    self.initUI()
+
+  def initUI(self):
+    self.label1.grid(row=0,column=0,sticky=N+S+E+W)
+    self.label2.grid(row=0,column=1,sticky=N+S+E+W)
+    self.regulars.grid(row=1,column=0,sticky=N+S+E+W)
+    self.playing.grid(row=1,column=1,sticky=N+S+E+W)
+    self.entry.grid(row=2,column=0,columnspan=2,sticky=N+S+E+W)
+
+  def addName(self,event=''):
+    nameToAdd = self.entry.get()
+    self.entry.delete(0,END)
+    self.regulars.insert(END,name)
+
 def onClosing():
   for widget in top.winfo_children():
     widget.destroy()
@@ -1455,9 +1499,15 @@ def timeNow():
   t = datetime.now()
   return t.strftime('%Y%m%d%H%M')
 
-def main():
+def main(**kwargs):
+  if 'scaleWindow' in kwargs:
+    scaleWindow = kwargs['scaleWindow']
+    if not(scaleWindow in ['large','medium','small']):
+      scaleWindow = 'medium'
+  else: 
+    scaleWindow = 'medium'
   global top
-  top = MainWindow()
+  top = MainWindow(scaleWindow=scaleWindow)
   top.protocol("WM_DELETE_WINDOW", onClosing)
   top.focus_force()
   top.lift()
