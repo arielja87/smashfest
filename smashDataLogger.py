@@ -62,14 +62,17 @@ class MainWindow(Tk):
     else:
       self.scale = 1.
       #self.scale = 1.2
-      #self.scale = .9
+      #self.scale = .7
       #self.scale = self.winfo_screenwidth()*.8/self.w
 
     self.centerWindow(int(self.w*self.scale),int(self.h*self.scale))
-    self.colors = {'p1red':'#f55943','p2yellow':'#f5db43','p3purple':'#5c3ba8','p4green':'#32b755','pListBlue':'#3568a0','pListOrange':'#f5af43'}
-    self.dataFileName = 'smashStats.csv'
-    self.dataFileName = os.path.abspath(os.path.join('.','smashStats.csv'))
-    #self.dataFileName = os.path.abspath(os.path.join('.','junkStats.csv'))
+    self.colors = {'p1red':'#f55943','p2purple':'#f5db43','p3yellow':'#5c3ba8','p4green':'#32b755','pListBlue':'#3568a0','pListOrange':'#f5af43'}
+    self.dataFileName1v1 = os.path.abspath(os.path.join('.','smashStats.csv'))              # for 1v1 mode or only 2 players selected in Free-for-all mode
+    self.dataFileNameFreeForAll = os.path.abspath(os.path.join('.','freeForAllStats.csv'))  # free-for-all mode with 3-4 players
+    self.dataFileNameTeams = os.path.abspath(os.path.join('.','teamsStats.csv'))            # for 2v2 mode only
+    #self.dataFileName1v1 = os.path.abspath(os.path.join('.','junkStats.csv'))
+    #self.dataFileNameFreeForAll = os.path.abspath(os.path.join('.','junkStats.csv'))
+    #self.dataFileNameTeams = os.path.abspath(os.path.join('.','junkStats.csv'))
     self.today = datetime.now()
     self.today = self.today.strftime('%Y%m%d')
 
@@ -84,14 +87,13 @@ class MainWindow(Tk):
     "Sonic",'QuestionMark','Logo']
 
     #add all the legal stages
-    self.stages = ['battlefield','bowsersCastle','delfinosSecret','distantPlanet',
-    'dreamland','finalDestination','fountainOfDreams','greenHillZone','hyruleCastle',
-    'infiniteGlacier','lylatCruise','metalCavern','norfair','peachsCastle64','pokemonStadium2',
-    'saffronCity','skyworld','smashville','warioLand','yoshisIsland','yoshisStory']
+    self.stages = ['battlefield','delfinosSecret',
+    'dreamland','finalDestination','fountainOfDreams','greenHillZone','norfair',
+    'pokemonStadium2','smashville','warioLand','yoshisIsland','yoshisStory']
 
     #players!
-    self.players = ['Allen','Brett','Joe','Josh','Ryan','Sean','Torben']
-    self.nickNames = {'Allen':'CharLord','Brett':u'\u00c7o\u00e7k','Josh':u'\u00c7\u00f2\u00ecT','Torben':u'BUTTS'}
+    self.players = ['Allen','Brett','Joe','Josh','Sean','Torben']
+    self.nickNames = {'Allen':'CharLord','Brett':u'\u00c7o\u00e7k','Joe':u'\u00c7g4y','Josh':u'\u00c7\u00f2\u00ecT','Torben':u'BUTTS'}
     self.avatars = {}  # should add these at some point images to cover the question mark before choosing a character
 
     #images of character faces and icons
@@ -99,9 +101,9 @@ class MainWindow(Tk):
 
 
     self.P1 = PlayerHeadWindow(self,PNUM=1,FACES=self.faceImgs,BORDERCOLOR=self.colors['p1red'],bg='#fff')
-    self.P2 = PlayerHeadWindow(self,PNUM=2,FACES=self.faceImgs,BORDERCOLOR=self.colors['p2yellow'],bg='#fff')
+    self.P2 = PlayerHeadWindow(self,PNUM=2,FACES=self.faceImgs,BORDERCOLOR=self.colors['p3yellow'],bg='#fff')
     self.Ps = PlayerListWindow(self,BORDERCOLOR=self.colors['pListBlue'],bg='#fff',team=1)
-    self.P3 = PlayerHeadWindow(self,PNUM=3,FACES=self.faceImgs,BORDERCOLOR=self.colors['p3purple'],bg='#fff')
+    self.P3 = PlayerHeadWindow(self,PNUM=3,FACES=self.faceImgs,BORDERCOLOR=self.colors['p2purple'],bg='#fff')
     self.P4 = PlayerHeadWindow(self,PNUM=4,FACES=self.faceImgs,BORDERCOLOR=self.colors['p4green'],bg='#fff')
     self.Ps2 = PlayerListWindow(self,BORDERCOLOR=self.colors['pListOrange'],bg='#fff',team=2)
     self.mainCanv = SelectionWindow(self,bg='#fff',highlightthickness=0)
@@ -160,7 +162,7 @@ class MainWindow(Tk):
     self.Ps.player2.set(p2)
     self.Ps2.playMode.set(self.Ps2.modes[0])
     self.Ps.labels[p1].config(highlightbackground=self.colors['p1red'])
-    self.Ps.labels[p2].config(highlightbackground=self.colors['p2yellow'])
+    self.Ps.labels[p2].config(highlightbackground=self.colors['p3yellow'])
     self.Ps2.labels[self.Ps2.modes[0]].config(highlightbackground='#000')
     self.mainCanv.P1.set(p1)
     self.mainCanv.P2.set(p2)
@@ -170,6 +172,36 @@ class MainWindow(Tk):
     self.setFooter(toggle=-1)
 
   # different sub-functions specific to hovering/clicking a character for P1/P2, that all pass control to setCharac
+  def setCharac(self,pNum,mode,charac):
+    obOthers = [self.P1,self.P2,self.P3,self.P4]
+    obPnum = obOthers[pNum-1]
+    del obOthers[pNum-1]
+
+    if pNum == 1:
+      obCanvNum = self.mainCanv.char1
+    elif pNum == 2:
+      obCanvNum = self.mainCanv.char2
+    elif pNum == 3:
+      obCanvNum = self.mainCanv.char3
+    else:
+      obCanvNum = self.mainCanv.char4
+
+    if mode == 'soft':
+      if charac:
+        if not(obPnum.tempChar.get()):
+          obPnum.pickCharacter(charac)
+          #obCanvNum.set(charac)
+          for obOther in obOthers:
+            obOther.kickCharacter(mode=mode)
+      else:
+        obPnum.kickCharacter(mode=mode)
+    else:
+      if charac:
+        obPnum.pickCharacter(charac,mode=mode)
+        obCanvNum.set(charac)
+        for obOther in obOthers:
+          obOther.kickCharacter(mode='soft')
+
   def setCharacSoftP1(self,event,*args):
     charac = self.mainCanv.charTraceP1.get()
     self.setCharac(pNum=1,mode='soft',charac=charac)
@@ -206,36 +238,6 @@ class MainWindow(Tk):
       charac = self.mainCanv.charLockP4.get()
       self.setCharac(pNum=4,mode='hard',charac=charac)
 
-  def setCharac(self,pNum,mode,charac):
-    obOthers = [self.P1,self.P2,self.P3,self.P4]
-    obPnum = obOthers[pNum-1]
-    del obOthers[pNum-1]
-
-    if pNum == 1:
-      obCanvNum = self.mainCanv.char1
-    elif pNum == 2:
-      obCanvNum = self.mainCanv.char2
-    elif pNum == 3:
-      obCanvNum = self.mainCanv.char3
-    else:
-      obCanvNum = self.mainCanv.char4
-
-    if mode == 'soft':
-      if charac:
-        if not(obPnum.tempChar.get()):
-          obPnum.pickCharacter(charac)
-          obCanvNum.set(charac)
-          for obOther in obOthers:
-            obOther.kickCharacter(mode=mode)
-      else:
-        obPnum.kickCharacter(mode=mode)
-    else:
-      if charac:
-        obPnum.pickCharacter(charac,mode=mode)
-        obCanvNum.set(charac)
-        for obOther in obOthers:
-          obOther.kickCharacter(mode='soft')
-
   # switching between stage and character modes
   def modeSwitch(self,event=''):
     if self.mainCanv.toggleMode.get() == 'stageButton':
@@ -249,36 +251,84 @@ class MainWindow(Tk):
       self.Ps2.setMode(self.Ps2.modes[0])
       self.mainCanv.playMode = 0
       self.mainCanv.modeTextInsert(0)
+      self.mainCanv.kickHeads('soft')
+      for el in self.mainCanv.modeText:
+        if el == self.mainCanv.modeText[self.mainCanv.playMode]:
+          self.mainCanv.charStageStock.tag_raise(el)
+        else:
+          self.mainCanv.charStageStock.tag_lower(el)
+
       self.kickP3()
       self.kickP4()
+      ra = self.P1.PnumText.tag_ranges('team')
+      if ra:
+        for ob in [self.P1.PnumText,self.P2.PnumText,self.P3.PnumText,self.P4.PnumText]:
+          ob.config(state='normal')
+          ob.delete(ra[0],ra[1])
+          ob.config(state='disabled')
 
   # players 3 and 4 not allowed in 1v1 mode
   def kickP3(self,event=''):
     if self.mainCanv.P3.get():
-      self.P3.kickCharacter()
       self.P3.kickPlayer()
       self.mainCanv.P3.set('')
       self.Ps.unSetPlayer(3)
+    if self.mainCanv.char3.get():
+      self.P3.kickCharacter()
+      self.mainCanv.char3.set('')
+      self.mainCanv.charLockP3.set('')
 
   def kickP4(self,event=''):
     if self.mainCanv.P4.get():
-      self.P4.kickCharacter()
       self.P4.kickPlayer()
       self.mainCanv.P4.set('')
       self.Ps.unSetPlayer(4)
+    if self.mainCanv.char4.get():
+      self.P4.kickCharacter()
+      self.mainCanv.char4.set('')
+      self.mainCanv.charLockP4.set('')
 
   def setPlayMode2(self,event,*args):
-    self.Ps2.setMode(self.Ps2.modes[1])
-    self.mainCanv.playMode = 1
-    self.mainCanv.modeTextInsert(1)
+    if not(self.Ps2.playMode.get() == self.Ps2.modes[1]):
+      self.Ps2.setMode(self.Ps2.modes[1])
+      self.mainCanv.playMode = 1
+      self.mainCanv.modeTextInsert(1)
+      self.mainCanv.kickHeads('soft')
+      for el in self.mainCanv.modeText:
+        if el == self.mainCanv.modeText[self.mainCanv.playMode]:
+          self.mainCanv.charStageStock.tag_raise(el)
+        else:
+          self.mainCanv.charStageStock.tag_lower(el)
+      for ob in [self.P1.PnumText,self.P2.PnumText]:
+        ob.config(state='normal')
+        ob.insert(END,', Team 1','team')
+        ob.config(state='disabled')
+      for ob in [self.P3.PnumText,self.P4.PnumText]:
+        ob.config(state='normal')
+        ob.insert(END,', Team 2','team')
+        ob.config(state='disabled')
 
   def setPlayMode3(self,event,*args):
-    self.Ps2.setMode(self.Ps2.modes[2])
-    self.mainCanv.playMode = 2
-    self.mainCanv.modeTextInsert(2)
+    if not(self.Ps2.playMode.get() == self.Ps2.modes[2]):
+      self.Ps2.setMode(self.Ps2.modes[2])
+      self.mainCanv.playMode = 2
+      self.mainCanv.modeTextInsert(2)
+      self.mainCanv.kickHeads('soft')
+      for el in self.mainCanv.modeText:
+        if el == self.mainCanv.modeText[self.mainCanv.playMode]:
+          self.mainCanv.charStageStock.tag_raise(el)
+        else:
+          self.mainCanv.charStageStock.tag_lower(el)
 
+      ra = self.P1.PnumText.tag_ranges('team')
+      if ra:
+        for ob in [self.P1.PnumText,self.P2.PnumText,self.P3.PnumText,self.P4.PnumText]:
+          ob.config(state='normal')
+          ob.delete(ra[0],ra[1])
+          ob.config(state='disabled')
+
+  # on Esc-press clear stockHeads, clear stage selection, clear character selection, reset toggleMode to character window
   def reset(self,event=''):
-    # on Esc-press clear stockHeads, clear stage selection, clear character selection, reset toggleMode to character window
     self.mainCanv.kickHeads(mode='hard')
     self.mainCanv.kickStage(mode='hard')
     self.mainCanv.zeroVars()
@@ -422,14 +472,41 @@ class MainWindow(Tk):
     if toggle in range(3):
       self.footBar.set('%s',text,toggle=toggle)
     else:
-      f=open(self.dataFileName)
+      f=open(self.dataFileName1v1)
       lines=f.readlines()
+      f.close()
       numMatches = len(lines)
       lastThree = lines[-3:]
       lastThree.reverse()
       wasToday = [self.today in el for el in lastThree]
-      numToday = sum(wasToday)
+
+      '''
+      f=open(self.dataFileNameTeams)
+      lines=f.readlines()
       f.close()
+      numMatches = len(lines)
+      if numMatches >= 3:
+        lastThree2 = lines[-3:]
+        lastThree2.reverse()
+        wasToday2 = [self.today in el for el in lastThree2]
+      else:
+        lastThree2 = []
+        wasToday2 = []
+
+      f=open(self.dataFileNameFreeForAll)
+      lines=f.readlines()
+      f.close()
+      numMatches = len(lines)
+      if numMatches >= 3:
+        lastThree3 = lines[-3:]
+        lastThree3.reverse()
+        wasToday3 = [self.today in el for el in lastThree3]
+      else:
+        lastThree3 = []
+        wasToday3 = []
+
+      lastThree = sorted(lastThree+lastThree2+lastThree3,key=lambda el:el.strip().split(',')[0])[0:3]
+      '''
 
       for i in range(3):
         self.setFooter(toggle=i,text='-----------')
@@ -439,47 +516,121 @@ class MainWindow(Tk):
           (dat,wp,wc,lp,lc,st,sg) = el.strip().split(',')
           text = '%s (%s) %s %s (%s)\n%s' % (wp,wc,'>'*int(st),lp,lc,sg)
           self.setFooter(toggle=i,text=text)
-         
-  # 
+    
+  # write winner(s)/loser(s) to a file
   def publishMatch(self,event,*args):
-    # write winner to a file
-    # need to add options for 1v1, free for all (2-4 players), and teams (4 players only)
     if self.mainCanv.lockInWin.get():
-      self.mainCanv.lockInWin.set(False)
-
       stock = self.mainCanv.stockCount.get()
       stage = self.mainCanv.stage.get()
-      if 'P1' in stock:
-        pWin = self.mainCanv.P1.get()
-        cWin = self.mainCanv.char1.get()
-        pLose = self.mainCanv.P2.get()
-        cLose = self.mainCanv.char2.get()
-      else: 
-        pWin = self.mainCanv.P2.get()
-        cWin = self.mainCanv.char2.get()
-        pLose = self.mainCanv.P1.get()
-        cLose = self.mainCanv.char1.get()
-
       num = stock[0]
+      n = [int(num)]
       if num == '1':
         s = ''
       else:
         s = 's'
 
-      # optionally add a bunch of text templates that are more exaggerated the higher num is and have a
-      # random number decide which one gets picked 
-      text = "Oh snap!? You mean %s's %s beat %s's %s by %s stock%s on %s???" % (pWin,cWin,pLose,cLose,num,s,stage)
-      answer = tkMessageBox.askyesno("Continue?",text)
+      if self.mainCanv.playMode == 0:
+        self.mainCanv.lockInWin.set(False)
 
+        if 'P1' in stock:
+          pWin = self.mainCanv.P1.get()
+          cWin = self.mainCanv.char1.get()
+          pLose = self.mainCanv.P2.get()
+          cLose = self.mainCanv.char2.get()
+        else: 
+          pWin = self.mainCanv.P2.get()
+          cWin = self.mainCanv.char2.get()
+          pLose = self.mainCanv.P1.get()
+          cLose = self.mainCanv.char1.get()
+
+        # optionally add a bunch of text templates that are more exaggerated the higher num is and have a
+        # random number decide which one gets picked 
+        text = "Oh snap!? You mean %s's %s beat %s's %s by %s stock%s on %s???" % (pWin,cWin,pLose,cLose,num,s,stage)
+        footText = "%s (%s) %s %s (%s)\n%s" % (pWin,cWin,'>'*n[0],pLose,cLose,stage)
+        winners = [pWin,cWin]
+        losers = [pLose,cLose]
+
+      elif self.mainCanv.playMode == 1:
+        if self.mainCanv.stockCount2.get():
+          stock2= self.mainCanv.stockCount2.get()
+          num2= stock2[0]
+        else:
+          num2 = 0
+
+        if '1' in stock[-2:]:
+          pWin1= self.mainCanv.P1.get()
+          cWin1= self.mainCanv.char1.get()
+          pWin2= self.mainCanv.P2.get()
+          cWin2= self.mainCanv.char2.get()
+          pLose1= self.mainCanv.P3.get()
+          cLose1= self.mainCanv.char3.get()
+          pLose2= self.mainCanv.P4.get()
+          cLose2= self.mainCanv.char4.get()
+        else:
+          pWin1 = self.mainCanv.P3.get()
+          cWin1 = self.mainCanv.char3.get()
+          pWin2= self.mainCanv.P4.get()
+          cWin2= self.mainCanv.char4.get()
+          pLose1 = self.mainCanv.P1.get()
+          cLose1 = self.mainCanv.char1.get()
+          pLose2= self.mainCanv.P2.get()
+          cLose2= self.mainCanv.char2.get()
+
+        if 'B' in stock:
+          num,num2 = num2,num
+        n = [int(el) for el in [num,num2]]
+
+        text = "Oh snap!? You mean %s (%s) + %s (%s) beat %s (%s) + %s (%s) by %s/%s stocks on %s???" % (pWin1,cWin1,pWin2,cWin2,pLose1,cLose1,pLose2,cLose2,num,num2,stage)
+        footText = "%s (%s) + %s (%s) %s %s (%s) + %s (%s)\n%s" % (pWin1,cWin1,pWin2,cWin2,'>'*sum(n),pLose1,cLose1,pLose2,cLose2,stage)
+        winners = [pWin1,cWin1,pWin2,cWin2]
+        losers = [pLose1,cLose1,pLose2,cLose2]
+
+      else:
+        n = [int(num)]
+        loseList = [self.mainCanv.P1,self.mainCanv.char1,self.mainCanv.P2,self.mainCanv.char2,self.mainCanv.P3,self.mainCanv.char3,self.mainCanv.P4,self.mainCanv.char4]
+
+        if 'A' in stock[-2:]:
+          if '1' in stock[-2:]:
+            pWin= self.mainCanv.P1.get()
+            cWin= self.mainCanv.char1.get()
+            del(loseList[0:2])
+          else:
+            pWin= self.mainCanv.P3.get()
+            cWin= self.mainCanv.char3.get()
+            del(loseList[4:6])
+        else:
+          if '1' in stock[-2:]:
+            pWin= self.mainCanv.P2.get()
+            cWin= self.mainCanv.char2.get()
+            del(loseList[2:4])
+          else:
+            pWin= self.mainCanv.P4.get()
+            cWin= self.mainCanv.char4.get()
+            del(loseList[6:8])
+
+        pLose = [ob.get() for ob in loseList if ob.get()]
+
+        loseText = ''
+        for (i,t) in enumerate(pLose):
+          if i%2:
+            loseText = loseText+'(%s) ' % t
+          else:
+            if i>1:
+              loseText = loseText+'/ '
+            loseText = loseText+'%s ' % t
+        text = "Oh snap!? You mean %s (%s) beat %s by %s stock%s on %s???" % (pWin,cWin,loseText,num,s,stage)
+        footText = "%s (%s) %s %s \n%s" % (pWin,cWin,'>'*n[0],loseText,stage)
+        winners = [pWin,cWin]
+        losers = pLose
+
+      answer = tkMessageBox.askyesno("Continue?",text)
       if answer:
-        n = int(num)
-        self.logIt(pWin,cWin,pLose,cLose,n,stage)
+        self.logIt([winners,losers,n,stage])
 
         #get the previous two matches (to bump them down the recent list in the footer); update the footer
-        text = "%s (%s) %s %s (%s)\n%s" % (pWin,cWin,'>'*n,pLose,cLose,stage)
         tNext1 = self.footBar.get(0)
         tNext2 = self.footBar.get(1)
-        self.setFooter(toggle=0,text=text)
+        self.setFooter(toggle=0,text=footText)
         self.setFooter(toggle=1,text=tNext1)
         self.setFooter(toggle=2,text=tNext2)
 
@@ -490,15 +641,31 @@ class MainWindow(Tk):
       else:
         self.mainCanv.kickHeads()
 
-  def logIt(self,winner,winnerChar,loser,loserChar,stockMargin,stage):
-    # create a standard data frame, and append this match to a battleData file
-    cols = ['WinningPlayer','WinningCharacter','LosingPlayer','LosingCharacter','StockCount','Stage']
-    df = pd.DataFrame([[winner,winnerChar,loser,loserChar,stockMargin,stage]],columns=cols,index=[[timeNow()]])
+  # create a data frame of the match info, and append this match to the appropriate battleData file
+  def logIt(self,matchData):
+    winGroup,loseGroup,stockGroup,stage = matchData[0],matchData[1],matchData[2],[matchData[3]]
+    if len(winGroup)==4:
+      # 11 args => teams
+      cols = ['WinningP1','WinningChar1','WinningP2','WinningChar2','LosingP1','LosingChar1','LosingP2','LosingChar2','StockCountP1','StockCountP2','Stage']
+      fname = self.dataFileNameTeams
+    else:
+      # 1v1 or freeforall; length of loseGroup depends on number of losers
+      loserHeaders = ['LosingPlayer','LosingCharacter','LosingP2','LosingChar2','LosingP3','LosingChar3']
+      if len(loseGroup) == 2:
+        cols = ['WinningPlayer','WinningCharacter']+loserHeaders[0:2]+['StockCount','Stage']
+        fname = self.dataFileName1v1
+      else:
+        cols = ['WinningPlayer','WinningCharacter']+loserHeaders+['StockCount','Stage']
+        fname = self.dataFileNameFreeForAll
+        for i in range(6-len(loseGroup)):
+          loseGroup.append('')
 
-    with open(self.dataFileName,'a') as f:
+    df = pd.DataFrame([winGroup+loseGroup+stockGroup+stage],columns=cols,index=[[timeNow()]])
+
+    with open(fname,'a') as f:
       df.to_csv(f, header=False)
-
     f.close()
+
 
   def centerWindow(self,w=300, h=200):
     # get screen width and height
@@ -508,6 +675,7 @@ class MainWindow(Tk):
     x = (ws/2) - (w/2)
     y = (hs/2) - (h/2)
     self.geometry('%dx%d+%d+%d' % (w, h, x, y))
+    self.resizable(0,0)
 
 # this frame consists of a label ('Player 1'), a canvas w/ a question mark (where character images go),
 # and a text box with the player name
@@ -524,7 +692,7 @@ class PlayerHeadWindow(Frame):
     
     #text box sizing
     self.numH = 1
-    self.numW = 10
+    self.numW = 16
     self.nameH = 1
     self.nameW = 10
 
@@ -610,7 +778,7 @@ class PlayerListWindow(Frame):
 
     #text box sizing
     self.numH = 1
-    self.numW = 18
+    self.numW = 15
     self.nameH = int(320*master.scale)
     self.nameW = int(130*master.scale)
     self.modeH = int(100*master.scale)
@@ -640,7 +808,7 @@ class PlayerListWindow(Frame):
       self.labels = {}
       for name in self.players:
         self.labels[name] = Text(self.PnamesBox,borderwidth=0,height=1,width=self.numW,font=self.fn,highlightbackground='#fff',highlightcolor='#fff',highlightthickness=2)
-        self.labels[name].insert(END,name)
+        self.labels[name].insert(END,'{:<10}'.format(name))
         if name in master.nickNames.keys():
           text = ' (%s)' % master.nickNames[name]
           self.labels[name].insert(END,text)
@@ -688,10 +856,10 @@ class PlayerListWindow(Frame):
       color = self.colors['p1red']
     elif pNum == 2:
       obPlayer = self.player2
-      color = self.colors['p2yellow']
+      color = self.colors['p3yellow']
     elif pNum == 3:
       obPlayer = self.player3
-      color = self.colors['p3purple']
+      color = self.colors['p2purple']
     else:
       obPlayer = self.player4
       color = self.colors['p4green']
@@ -766,7 +934,9 @@ class SelectionWindow(Frame):
     self.toggleMode = StringVar(self)
     self.toggleMode.set('char')
     self.stockCount = StringVar(self)
+    self.stockCount2 = StringVar(self)
     self.stockCount.set('')
+    self.stockCount2.set('')
     self.readyForStock = False
     self.readyForStockFree = False
     self.readyForStockTeam = False
@@ -785,6 +955,7 @@ class SelectionWindow(Frame):
     self.P3 = StringVar(self)
     self.P4 = StringVar(self)
     self.playMode = 0
+    self.modeText = ['1v1','multi','multi']
     self.char1 = StringVar(self)
     self.char2 = StringVar(self)
     self.char3 = StringVar(self)
@@ -793,11 +964,28 @@ class SelectionWindow(Frame):
     self.fn = tkFont.Font(family="Calibri", size=int(24*master.scale), weight=tkFont.BOLD)
 
     #canvas where all the action happens
+    self.dictMake()
     self.charStageStock = Canvas(self,height=self.canH,width=self.canW,bg='#fff')
     self.iconImgs = {el:ImageTk.PhotoImage(Image.open(os.path.abspath(os.path.join('.','Thumbs','%s.jpg')) % el).resize((int(64*master.scale),int(64*master.scale)),Image.ANTIALIAS)) for el in self.characters if el != 'QuestionMark'}
     self.stageImgs = {el:ImageTk.PhotoImage(Image.open(os.path.abspath(os.path.join('.','Stages','%s.gif')) % el).resize((int(160*master.scale),int(160*master.scale)),Image.ANTIALIAS)) for el in self.stages}
 
     #actual images
+    for key in self.stockPixelDict.keys():
+      posx,posy = self.stockPixelDict[key]
+      posx = int(posx*self.scaleX)
+      posy = int(posy*self.scaleY)
+      if 'kP' in key:
+        self.charStageStock.create_image(posx,posy,image=self.iconImgs['Logo'],tags='1v1')
+      elif 'Butt' in key:
+        self.charStageStock.create_image(posx,posy,image=self.iconImgs['Logo'],tags='butt')
+
+    for key in self.stockPixelDict2.keys():
+      if not('Butt' in key):
+        posx,posy = self.stockPixelDict2[key]
+        posx = int(posx*self.scaleX)
+        posy = int(posy*self.scaleY)
+        self.charStageStock.create_image(posx,posy,image=self.iconImgs['Logo'],tags='multi')
+
     self.charImg = ImageTk.PhotoImage(Image.open(os.path.abspath(os.path.join('.','Banners','charBanner.jpg'))).resize((int(900*master.scale),int(598*master.scale)),Image.ANTIALIAS))
     self.stagImg = ImageTk.PhotoImage(Image.open(os.path.abspath(os.path.join('.','Banners','stageBanner.jpg'))).resize((int(900*master.scale),int(598*master.scale)),Image.ANTIALIAS))
     self.charStageStock.create_image(self.canW/2,self.canH/2,image=self.charImg,tags='charButton')
@@ -813,8 +1001,6 @@ class SelectionWindow(Frame):
     self.charStageStock.bind('<Control-ButtonRelease-1>',self.mouseSaveP2)
     self.charStageStock.bind('<Shift-ButtonRelease-1>',self.mouseSaveP3)
     self.charStageStock.bind('<Shift-Control-ButtonRelease-1>',self.mouseSaveP4)
-
-    self.dictMake()
     
     self.initUI()
 
@@ -831,6 +1017,8 @@ class SelectionWindow(Frame):
       self.charStageStock.tag_raise('head')
       self.charStageStock.tag_raise('temp')
       self.charStageStock.tag_raise('playMode')
+      self.charStageStock.tag_raise(self.modeText[self.playMode])
+      self.charStageStock.tag_raise('butt')
 
   def kickStage(self,mode='hard'):
     # hard mode: delete stage selection
@@ -857,8 +1045,21 @@ class SelectionWindow(Frame):
     # both modes: check if ready and if it's a new selection
     # hard mode: set stockCount and drawHeads
     # soft mode: check if stockCount is not set : don't set stockCount, but drawHeads 
-    if stockKey and stockKey != self.stockCount.get() and self.readyForStock:
+
+    if self.playMode == 1 and self.stockCount.get():
+      if stockKey != self.stockCount2.get() and stockKey[-1] == self.stockCount.get()[-1] and not(stockKey[-2:] == self.stockCount.get()[-2:]):
+        if mode=='hard' and stockKey != 'submitButton':
+          self.stockCount2.set(stockKey)
+        if mode=='hard' or not(self.stockCount2.get()):
+          self.charStageStock.delete('head2')
+          self.drawHeads(stockKey,'head2')
+        return
+
+    if stockKey and stockKey != self.stockCount.get():
       if mode=='hard' and stockKey != 'submitButton':
+        if not(stockKey[-1:] == self.stockCount.get()[-1:]):
+          self.stockCount2.set('')
+          self.charStageStock.delete('head2')
         self.stockCount.set(stockKey)
       if mode=='hard' or not(self.stockCount.get()):
         self.charStageStock.delete('head')
@@ -870,32 +1071,57 @@ class SelectionWindow(Frame):
       self.charStageStock.create_text(self.t1x,self.t1y,anchor=W,text='P1 wins:',font=self.fn,tags='playMode')
       self.charStageStock.create_text(self.t2x,self.t2y,anchor=E,text='P2 wins:',font=self.fn,tags='playMode')
       self.charStageStock.tag_raise('playMode')
+      self.charStageStock.tag_raise('1v1')
     elif mode == 1:
       self.charStageStock.delete('playMode')
       self.charStageStock.create_text(self.t1x,self.t1y,anchor=W,text='Team 1 wins:',font=self.fn,tags='playMode')
       self.charStageStock.create_text(self.t2x,self.t2y,anchor=E,text='Team 2 wins:',font=self.fn,tags='playMode')
       self.charStageStock.tag_raise('playMode')
+      self.charStageStock.tag_raise('multi')
     else:
       self.charStageStock.delete('playMode')
-      self.charStageStock.create_text(self.t1x,self.t1y,anchor=W,text='P1/P3 wins:',font=self.fn,tags='playMode')
-      self.charStageStock.create_text(self.t2x,self.t2y,anchor=E,text='P2/P4 wins:',font=self.fn,tags='playMode')
+      self.charStageStock.create_text(self.t1x,self.t1y,anchor=W,text='P1/P2 wins:',font=self.fn,tags='playMode')
+      self.charStageStock.create_text(self.t2x,self.t2y,anchor=E,text='P3/P4 wins:',font=self.fn,tags='playMode')
       self.charStageStock.tag_raise('playMode')
+      self.charStageStock.tag_raise('multi')
 
   def kickHeads(self,mode='hard'):
     if mode == 'hard' or not(self.stockCount.get()):
       self.charStageStock.delete('head')
       self.stockCount.set('')
+    if mode == 'hard' or not(self.stockCount2.get()):
+      self.charStageStock.delete('head2')
+      self.stockCount2.set('')
 
-  def drawHeads(self,stockKey):
+  def drawHeads(self,stockKey,tag='head'):
     # search through the stockPixelDict for stock numbers <= stock count
     # draw little heads for each stock for the winner
     numSet = ['1','2','3','4']
-    if 'P1' in stockKey:
-      p = 'P1'
-      charHead = self.iconImgs[self.char1.get()]
-    elif 'P2' in stockKey: 
-      p = 'P2'
-      charHead = self.iconImgs[self.char2.get()]
+    p = stockKey[-2:]
+    # Mode == 0 and P => char1/char2 get okay    
+    # Mode != 0 and A/B => all get okay
+    if self.playMode and 'A' in p or 'B' in p:
+      if 'A1' in p:
+        charHead = self.iconImgs[self.char1.get()]
+      elif 'B1' in p:
+        charHead = self.iconImgs[self.char2.get()]
+      elif 'A2' in p:
+        if self.char3.get():
+          charHead = self.iconImgs[self.char3.get()]
+        else:
+          return
+      elif 'B2' in p:
+        if self.char4.get():
+          charHead = self.iconImgs[self.char4.get()]
+        else:
+          return
+    elif 'P' in p:
+      if 'P1' in p:
+        charHead = self.iconImgs[self.char1.get()]
+      elif 'P2' in p:
+        charHead = self.iconImgs[self.char2.get()]
+      else:
+        return
     else:
       return
 
@@ -904,19 +1130,24 @@ class SelectionWindow(Frame):
     else:
       num = 0
 
-    candKeys = [key for key in self.stockPixelDict.keys() if p in key and key[0] in numSet]
+    if self.playMode:
+      sPDict = self.stockPixelDict2
+    else:
+      sPDict = self.stockPixelDict
+
+    candKeys = [key for key in sPDict.keys() if p in key and key[0] in numSet]
     for key in candKeys:
       if int(key[0]) <= num:
-        posx,posy = self.stockPixelDict[key]
+        posx,posy = sPDict[key]
         posx = int(posx*self.scaleX)
         posy = int(posy*self.scaleY)
-        self.charStageStock.create_image(posx,posy,image=charHead,tags='head')
-        self.charStageStock.tag_raise('head')
+        self.charStageStock.create_image(posx,posy,image=charHead,tags=tag)
+        self.charStageStock.tag_raise(tag)
 
   def zeroVars(self,togg='trace'):
     if togg=='trace':
       self.kickStage('soft')
-      self.kickHeads('soft')
+      #self.kickHeads('soft')
       self.charTraceP1.set('')
       self.charTraceP2.set('')
       self.charTraceP3.set('')
@@ -944,6 +1175,8 @@ class SelectionWindow(Frame):
       selection = self.stagDict[(x,y)]
     elif (x,y) in self.toggleDict:
       selection = self.toggleDict[(x,y)]
+    elif (x,y) in self.stockDict2 and self.playMode:
+      selection = self.stockDict2[(x,y)]
     elif (x,y) in self.stockDict:
       selection = self.stockDict[(x,y)]
 
@@ -982,18 +1215,26 @@ class SelectionWindow(Frame):
             self.stagTrace.set(sel)
             self.pickStage(sel)   #default pick mode ='soft'
         else:
-          self.stagTrace.set('')
-          self.kickStage(mode='soft')
+          if self.stagTrace.get():
+            self.stagTrace.set('')
+            self.kickStage(mode='soft')
 
         # check if we've already hovered this and setStockCount softly if not
-        if sel in self.stockPixelDict.keys():
+        if self.playMode:
+          ob = self.stockPixelDict2
+        else:
+          ob = self.stockPixelDict
+
+        if sel in ob.keys():
           if sel != self.stocTrace.get():
             self.stocTrace.set(sel)
             self.checkReady()
-            self.setStockCount(sel)
+            if self.readyForStock:
+              self.setStockCount(sel)
         else:
-          self.kickHeads(mode='soft')
-          self.stocTrace.set('')
+          if self.stocTrace.get():
+            self.kickHeads(mode='soft')
+            self.stocTrace.set('')
 
       else:
         #not hovering anything : set all trace vars to empty
@@ -1012,13 +1253,19 @@ class SelectionWindow(Frame):
         self.pickStage(sel,mode='hard')
 
       # check if we've already set this stock count, and setStockCount hard if not
-      if sel in self.stockPixelDict.keys() and sel != self.toggleMode.get():
+      if self.playMode:
+        ob = self.stockPixelDict2
+      else:
+        ob = self.stockPixelDict
+
+      if sel in ob.keys() and sel != self.toggleMode.get():
         self.checkReady()
         if sel == 'submitButton':
           if self.readyForStock and self.stockCount.get():
             self.lockInWin.set(True)
         else:
-          self.setStockCount(sel,mode='hard')
+          if self.readyForStock:
+            self.setStockCount(sel,mode='hard')
 
       # check our mode, set and switchMode if different
       if sel in self.toggleButtons and sel != self.toggLock.get():
@@ -1103,6 +1350,7 @@ class SelectionWindow(Frame):
 
   def checkReady(self):
     # to allow a stock selection, we need players, characters and stage chosen
+    # 1v1
     if self.playMode == 0:
       self.statVars = [el.get() for el in [self.P1,self.char1,self.P2,self.char2]]
       self.allVars = [el.get() for el in [self.P1,self.char1,self.P2,self.char2,self.stage]]
@@ -1111,38 +1359,75 @@ class SelectionWindow(Frame):
       self.allVars = [el.get() for el in [self.P1,self.char1,self.P2,self.char2,self.P3,self.char3,self.P4,self.char4,self.stage]]
     else:
       # check that for each player, there's a character and vice versa; also make sure at least 2 players/characters
-      l1 = [not(el.get()=='') for el in [self.P1,self.char1]]
-      l2 = [not(el.get()=='') for el in [self.P2,self.char2]]
-      l3 = [not(el.get()=='') for el in [self.P3,self.char3]]
-      l4 = [not(el.get()=='') for el in [self.P4,self.char4]]
-      if ps == cs and sum(ps) >= 2:
-        ps = [el for el in ps if el.get()]
-        cs = [el for el in cs if el.get()]
-        self.statVars = [el.get() for el in ps+cs]
-        self.allVars = [el.get() for el in ps+cs+[self.stage]]
+      l3 = [self.P3,self.char3]
+      l4 = [self.P4,self.char4]
+      l3check = [not(el.get()=='') for el in l3]
+      l4check = [not(el.get()=='') for el in l4]
+
+      if all([li[0] == li[1] for li in [l3check,l4check]]):
+        PCs = [el for li in [l3,l4] for el in li if el.get()]
+        self.statVars = [el.get() for el in [self.P1,self.char1,self.P2,self.char2]+PCs]
+        self.allVars = [el.get() for el in [self.P1,self.char1,self.P2,self.char2]+PCs+[self.stage]]
+      else:
+        self.statVars = [el.get() for el in [self.P1,self.char1,self.P2,self.char2,self.P3,self.char3,self.P4,self.char4]]
+        self.allVars = [el.get() for el in [self.P1,self.char1,self.P2,self.char2,self.P3,self.char3,self.P4,self.char4,self.stage]]
 
     if all(self.statVars):
-      self.readyForStats = True
-    else:
+      if not(self.readyForStats):
+        self.readyForStats = True
+    elif self.readyForStats:
       self.readyForStats = False
 
     if all(self.allVars):
-      self.readyForStock = True
-    else:
+      if not(self.readyForStock):
+        self.readyForStock = True
+    elif self.readyForStock:
       self.readyForStock = False
 
 
   def getMatchupData(self,vars):
-    p1 = vars[0]
-    c1 = vars[1]
-    p2 = vars[2]
-    c2 = vars[3]
-    stage = vars[4]
+    if self.playMode == 0:
+      p1 = vars[0]
+      c1 = vars[1]
+      p2 = vars[2]
+      c2 = vars[3]
+      stage = vars[4]
 
-    self.dataWin = DataWindow(self,file=self.master.dataFileName,p1=p1,c1=c1,p2=p2,c2=c2,stage=stage,scale=self.master.scale)
-    self.dataWin.focus_force()
-    self.dataWin.lift()
-    self.dataWin.mainloop()
+      self.dataWin = DataWindow(self,file=self.master.dataFileName1v1,p1=p1,c1=c1,p2=p2,c2=c2,stage=stage,scale=self.master.scale)
+      self.dataWin.focus_force()
+      self.dataWin.lift()
+      self.dataWin.mainloop()
+
+    '''
+    elif self.playMode == 1:
+      p1 = vars[0]
+      c1 = vars[1]
+      p2 = vars[2]
+      c2 = vars[3]
+      p3 = vars[4]
+      c3 = vars[5]
+      p4 = vars[6]
+      c4 = vars[7]
+      stage = vars[8]
+    else:
+      p1 = vars[0]
+      c1 = vars[1]
+      p2 = vars[2]
+      c2 = vars[3]
+
+      if len(vars) == 9:
+        p3 = vars[4]
+        c3 = vars[5]
+        p4 = vars[6]
+        c4 = vars[7]
+        stage = vars[8]
+      elif len(vars) == 7:
+        p3 = vars[4]
+        c3 = vars[5]
+        stage = vars[6]
+      else:
+        stage = vars[4]
+    '''
 
   def dictMake(self):
     # set up dictionaries with pixels as keys and either a character or stage name, or a stock count or toggle button string
@@ -1150,6 +1435,7 @@ class SelectionWindow(Frame):
     self.stagDict = {}
     self.toggleDict = {}
     self.stockDict = {}
+    self.stockDict2= {}
     self.toggleButtons = ['stageButton','charButton','statsButton']
 
     # these reference dictionaries will have a starting or center pixel for the sake of creating the reverse dictionary
@@ -1176,6 +1462,8 @@ class SelectionWindow(Frame):
     #start at 38,564, but they're 72x72 and I'll want these locations for placing icons later;
     # so the rough midpoint is actually (74,600) for the first one (and it's +\- 36 pixels)
     self.stockPixelDict = {'4stockP1':(74,682),'3stockP1':(154,682),'2stockP1':(234,682),'1stockP1':(314,682),'submitButton':(431,682),'1stockP2':(548,682),'2stockP2':(628,682),'3stockP2':(708,682),'4stockP2':(788,682)}
+    self.stockPixelDict2= {'submitButton':(431,682),'4stockA1':(74,656),'3stockA1':(154,656),'2stockA1':(234,656),'1stockA1':(314,656),'1stockA2':(548,656),'2stockA2':(628,656),'3stockA2':(708,656),'4stockA2':(788,656),
+                           '4stockB1':(74,735),'3stockB1':(154,735),'2stockB1':(234,735),'1stockB1':(314,735),'1stockB2':(548,735),'2stockB2':(628,735),'3stockB2':(708,735),'4stockB2':(788,735)}
 
     #sort over all the characters' upper-left corner pixels
     for el in self.charCornerPixelDict.keys():
@@ -1232,6 +1520,19 @@ class SelectionWindow(Frame):
       for singCoord in areaList:
         scaleCoord = (int(singCoord[0]*self.scaleX),int(singCoord[1]*self.scaleY))
         self.stockDict[scaleCoord] = el
+
+    # 2v2 and freeforall mode stock count buttons
+    for el in self.stockPixelDict2:
+      pix = self.stockPixelDict2[el]
+      x = pix[0]
+      y = pix[1]
+      #set of all x,y coords in the 72x72 swath of the smash logo:
+      areaList = [(xa,ya) for xa in range(x-36,x+37) for ya in range(y-36,y+37)]   
+
+      #each (x,y) pair will now be a key with a value of the character name
+      for singCoord in areaList:
+        scaleCoord = (int(singCoord[0]*self.scaleX),int(singCoord[1]*self.scaleY))
+        self.stockDict2[scaleCoord] = el
 
 
 class Stats2P:
@@ -1491,7 +1792,7 @@ class DataWindow(Toplevel):
     self.h = int(200*self.scale)
     self.w = int(1350*self.scale)
     
-    self.colors = {'p1red':'#f55943','p2yellow':'#f5db43','p3purple':'#5c3ba8','p4green':'#32b755','p12blend':'#ac7886'}
+    self.colors = {'p1red':'#f55943','p2purple':'#f5db43','p3yellow':'#5c3ba8','p4green':'#32b755','p12blend':'#ac7886'}
     self.frMode = 1
 
     self.centerWindow(h=self.h,w=self.w)
@@ -1554,19 +1855,19 @@ class DataWindow(Toplevel):
         self.p1c1VText2[i] = Text(self.p1c1V2,height=1,width=wid,highlightthickness=2,font=self.bf)
         self.c1VText2[i] = Text(self.c1V2,height=1,width=wid,highlightthickness=2,font=self.bf)
     
-    self.labelText[2].config(highlightbackground=self.colors['p2yellow'])
-    self.labelText[3].config(highlightbackground=self.colors['p2yellow'])
+    self.labelText[2].config(highlightbackground=self.colors['p3yellow'])
+    self.labelText[3].config(highlightbackground=self.colors['p3yellow'])
     if self.stage:
-      self.labelText2[2].config(highlightbackground=self.colors['p2yellow'])
-      self.labelText2[3].config(highlightbackground=self.colors['p2yellow'])
+      self.labelText2[2].config(highlightbackground=self.colors['p3yellow'])
+      self.labelText2[3].config(highlightbackground=self.colors['p3yellow'])
 
     self.p1VText[0].config(highlightbackground=self.colors['p1red'],font=self.hf)
     self.p1c1VText[0].config(highlightbackground=self.colors['p1red'],font=self.hf)
-    self.allVText[2].config(highlightbackground=self.colors['p2yellow'])
-    self.allVText[3].config(highlightbackground=self.colors['p2yellow'])
+    self.allVText[2].config(highlightbackground=self.colors['p3yellow'])
+    self.allVText[3].config(highlightbackground=self.colors['p3yellow'])
     self.p1VText[1].config(highlightbackground=self.colors['p1red'])
     self.p1VText[2].config(highlightbackground=self.colors['p12blend'])
-    self.p1VText[3].config(highlightbackground=self.colors['p2yellow'])
+    self.p1VText[3].config(highlightbackground=self.colors['p3yellow'])
     self.p1c1VText[1].config(highlightbackground=self.colors['p1red'])
     self.p1c1VText[2].config(highlightbackground=self.colors['p1red'])
     self.p1c1VText[3].config(highlightbackground=self.colors['p12blend'])
@@ -1578,11 +1879,11 @@ class DataWindow(Toplevel):
     if self.stage:
       self.p1VText2[0].config(highlightbackground=self.colors['p1red'],font=self.hf)
       self.p1c1VText2[0].config(highlightbackground=self.colors['p1red'],font=self.hf)
-      self.allVText2[2].config(highlightbackground=self.colors['p2yellow'])
-      self.allVText2[3].config(highlightbackground=self.colors['p2yellow'])
+      self.allVText2[2].config(highlightbackground=self.colors['p3yellow'])
+      self.allVText2[3].config(highlightbackground=self.colors['p3yellow'])
       self.p1VText2[1].config(highlightbackground=self.colors['p1red'])
       self.p1VText2[2].config(highlightbackground=self.colors['p12blend'])
-      self.p1VText2[3].config(highlightbackground=self.colors['p2yellow'])
+      self.p1VText2[3].config(highlightbackground=self.colors['p3yellow'])
       self.p1c1VText2[1].config(highlightbackground=self.colors['p1red'])
       self.p1c1VText2[2].config(highlightbackground=self.colors['p1red'])
       self.p1c1VText2[3].config(highlightbackground=self.colors['p12blend'])
@@ -1726,6 +2027,7 @@ class DataWindow(Toplevel):
     x = (ws/2) - (w/2)
     y = (hs/2) - (h/2)
     self.geometry('%dx%d+%d+%d' % (w, h, x, y))
+    self.resizable(0,0)
 
   def closeIt(self,event):
     for widget in self.winfo_children():
