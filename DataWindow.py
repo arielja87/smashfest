@@ -2,6 +2,7 @@
 
 from __future__ import division
 from Tkinter import *  
+import tkFont
 
 from Stats2P import Stats2P
 

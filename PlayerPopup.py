@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
-from Tkinter import *  
+from Tkinter import *
 import tkFont
 
-class PlayerPopup(Tk):
-  def __init__(self, *args, **kwargs):
-    di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in dir(Tk)}
-    Tk.__init__(self, *args, **di)
+import sys
+
+class PlayerPopup(Toplevel):
+  def __init__(self, master,*args, **kwargs):
+    di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in dir(Toplevel)}
+    Toplevel.__init__(self, master, **di)
 
     self.fn = tkFont.Font(family='Times',size=20)
     self.label1 = Label(self,font=self.fn)
@@ -33,3 +35,24 @@ class PlayerPopup(Tk):
     nameToAdd = self.entry.get()
     self.entry.delete(0,END)
     self.regulars.insert(END,name)
+
+
+def onClosing():
+  for widget in top.winfo_children():
+    widget.destroy()
+
+  top.destroy()
+
+def main(*args,**kwargs):
+  global top
+  top = Tk()
+
+  test = PlayerPopup(top)
+
+  top.protocol("WM_DELETE_WINDOW", onClosing)
+  top.focus_force()
+  top.lift()
+  top.mainloop()
+
+if __name__ == '__main__':
+  main()
