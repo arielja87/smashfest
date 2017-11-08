@@ -1,1 +1,9 @@
 smashDataLogger.pyc
+DataWindow.pyc
+MainWindow.pyc
+PlayerHeadWindow.pyc
+PlayerListWindow.pyc
+SelectionWindow.pyc
+Stats2P.pyc
+PlayerPopup.pyc
+FooterBar.pyc
