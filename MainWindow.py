@@ -70,7 +70,7 @@ class MainWindow(Tk):
     'pokemonStadium2','smashville','warioLand','yoshisIsland','yoshisStory']
 
     #players!
-    self.players = ['Allen','Brett','Joe','Josh','Sean','Torben']
+    self.players = ['Allen','Atakan','Brett','Joe','Josh','Sean','Torben']
     self.nickNames = {'Allen':'CharLord','Brett':u'\u00c7o\u00e7k','Joe':u'\u00c7g4y','Josh':u'\u00c7\u00f2\u00ecT','Torben':u'BUTTS'}
     self.avatars = {}  # should add these at some point images to cover the question mark before choosing a character
 
@@ -80,9 +80,9 @@ class MainWindow(Tk):
 
     self.P1 = PlayerHeadWindow(self,PNUM=1,FACES=self.faceImgs,BORDERCOLOR=self.colors['p1red'],bg='#fff')
     self.P2 = PlayerHeadWindow(self,PNUM=2,FACES=self.faceImgs,BORDERCOLOR=self.colors['p3yellow'],bg='#fff')
-    self.Ps = PlayerListWindow(self,BORDERCOLOR=self.colors['pListBlue'],bg='#fff',team=1)
     self.P3 = PlayerHeadWindow(self,PNUM=3,FACES=self.faceImgs,BORDERCOLOR=self.colors['p2purple'],bg='#fff')
     self.P4 = PlayerHeadWindow(self,PNUM=4,FACES=self.faceImgs,BORDERCOLOR=self.colors['p4green'],bg='#fff')
+    self.Ps = PlayerListWindow(self,BORDERCOLOR=self.colors['pListBlue'],bg='#fff',team=1)
     self.Ps2 = PlayerListWindow(self,BORDERCOLOR=self.colors['pListOrange'],bg='#fff',team=2)
     self.mainCanv = SelectionWindow(self,bg='#fff',highlightthickness=0)
     self.footBar = FooterBar(self)
