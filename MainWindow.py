@@ -29,7 +29,7 @@ class MainWindow(Tk):
     # Window dimension (pixels)
     self.config(bg='#fff')
     self.w = 1485
-    self.h = 650
+    self.h = 670
     
     if scaleWindow == 'large':
       self.scale = 1.2
@@ -40,7 +40,7 @@ class MainWindow(Tk):
     else:
       self.scale = 1.
       #self.scale = 1.2
-      #self.scale = .7
+      #self.scale = .9
       #self.scale = self.winfo_screenwidth()*.8/self.w
 
     self.centerWindow(int(self.w*self.scale),int(self.h*self.scale))
@@ -49,8 +49,8 @@ class MainWindow(Tk):
     self.dataFileNameFreeForAll = os.path.abspath(os.path.join('.','freeForAllStats.csv'))  # free-for-all mode with 3-4 players
     self.dataFileNameTeams = os.path.abspath(os.path.join('.','teamsStats.csv'))            # for 2v2 mode only
     #self.dataFileName1v1 = os.path.abspath(os.path.join('.','junkStats.csv'))
-    #self.dataFileNameFreeForAll = os.path.abspath(os.path.join('.','junkStats.csv'))
-    #self.dataFileNameTeams = os.path.abspath(os.path.join('.','junkStats.csv'))
+    #self.dataFileNameFreeForAll = os.path.abspath(os.path.join('.','junkFreeForAllStats.csv'))
+    #self.dataFileNameTeams = os.path.abspath(os.path.join('.','junkTeamsStats.csv'))
     self.today = datetime.now()
     self.today = self.today.strftime('%Y%m%d')
 

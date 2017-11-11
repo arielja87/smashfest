@@ -57,8 +57,9 @@ class StatusBar(Frame):
     di= {elem: kwargs[elem] for elem in kwargs.keys() if elem in master.keys()}
     Frame.__init__(self, master,di)
 
+    self.wrap = master.scale*420
     self.fn = tkFont.Font(family="Times", size=int(12*master.scale))
-    self.label = Label(self, bd=1, height=2, relief=SUNKEN, anchor=CENTER,font=self.fn)
+    self.label = Label(self, bd=1, height=3, relief=SUNKEN, anchor=CENTER,font=self.fn,wraplength=self.wrap)
     self.label.pack(fill=X)
 
   def update(self):
