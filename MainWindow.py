@@ -29,7 +29,7 @@ class MainWindow(Tk):
     # Window dimension (pixels)
     self.config(bg='#fff')
     self.w = 1485
-    self.h = 670
+    self.h = 690
     
     if scaleWindow == 'large':
       self.scale = 1.2
@@ -65,13 +65,13 @@ class MainWindow(Tk):
     "Sonic",'QuestionMark','Logo']
 
     #add all the legal stages
-    self.stages = ['battlefield','delfinosSecret',
+    self.stages = ['battlefield','delfinosSecret','hyruleCastle',
     'dreamland','finalDestination','fountainOfDreams','greenHillZone','norfair',
     'pokemonStadium2','smashville','warioLand','yoshisIsland','yoshisStory']
 
     #players!
-    self.players = ['Allen','Atakan','Brett','Joe','Josh','Sean','Torben']
-    self.nickNames = {'Allen':'CharLord','Brett':u'\u00c7o\u00e7k','Joe':u'\u00c7g4y','Josh':u'\u00c7\u00f2\u00ecT','Torben':u'BUTTS'}
+    self.players = ['Allen','Atakan','Brett','Claire','Joe','Josh','Sean','Torben']
+    self.nickNames = {'Allen':'CharLord','Brett':u'\u00c7o\u00e7k','Claire':'Jing','Joe':u'\u00c7g4y','Josh':u'\u00c7\u00f2\u00ecT','Sean':u'\u00c7uuck','Torben':u'BUTTS'}
     self.avatars = {}  # should add these at some point images to cover the question mark before choosing a character
 
     #images of character faces and icons

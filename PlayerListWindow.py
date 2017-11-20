@@ -109,6 +109,13 @@ class PlayerListWindow(Frame):
     self.labels[player].config(highlightbackground=color)
     obPlayer.set(player)
 
+    # ra = self.labels[player].tag_ranges('pnum')
+    # if ra:
+    #   self.labels[player].delete(ra[0],ra[1])
+
+    # te = 'P%s' % str(pNum)
+    # self.labels[player].insert(self.numW-2,te)
+
   def setMode(self,mode):
     self.labels[self.playMode.get()].config(highlightbackground='#fff')
     self.labels[mode].config(highlightbackground='#000')
