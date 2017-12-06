@@ -70,7 +70,7 @@ class MainWindow(Tk):
     'pokemonStadium2','smashville','warioLand','yoshisIsland','yoshisStory']
 
     #players!
-    self.players = ['Allen','Atakan','Brett','Claire','Joe','Josh','Sean','Torben']
+    self.players = ['Allen','Claire','Joe','Josh','Sean','Torben']
     self.nickNames = {'Allen':'CharLord','Brett':u'\u00c7o\u00e7k','Claire':'Jing','Joe':u'\u00c7g4y','Josh':u'\u00c7\u00f2\u00ecT','Sean':u'\u00c7uuck','Torben':u'BUTTS'}
     self.avatars = {}  # should add these at some point images to cover the question mark before choosing a character
 
